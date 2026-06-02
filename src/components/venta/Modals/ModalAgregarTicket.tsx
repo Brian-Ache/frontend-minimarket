@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -21,10 +21,29 @@ interface ModalAgregarTicket {
 export default function ModalAgregarTicket({
     open,
     setOpen,
-    onFocusBarcode
+    onFocusBarcode,
+    onAgregarTicket
 }:ModalAgregarTicket){
 
     const [nombre, setNombre]= useState("");
+
+////MANEJO DE MODAL CON TECLA Enter
+// Manejar navegación con teclado
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!open) return;
+        
+            if (e.key === "Enter") {
+                //console.log("Se agrego ticket con el nombre: "+ nombre);
+                onAgregarTicket(nombre);
+                setOpen(false); // Al pasar a false, el useEffect de arriba limpiará el input
+                onFocusBarcode();
+            }
+        }
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+      }, [open, setOpen,nombre,onAgregarTicket,onFocusBarcode]);
+
 
     return(
         <Dialog open={open} onOpenChange={setOpen}>
@@ -35,14 +54,21 @@ export default function ModalAgregarTicket({
                 </DialogHeader>
                 <div>
                     <Input
-                        type="number"
+                        type="text"
                         value={nombre}
                         onChange={(e) => setNombre(e.target.value)}
                     />
                 </div>
                 <DialogFooter>
-                    <Button onClick={() => {onAgregarTicket(nombre);}}>Aceptar</Button>
-                    <Button onClick={() => handleOpenChange(false)}
+                    <Button onClick={() => {
+                            console.log("el modal esta: " + open);
+                            onAgregarTicket(nombre);
+                            setOpen(false);
+                            onFocusBarcode();
+                        }
+                    }>Aceptar
+                    </Button>
+                    <Button onClick={() => {setOpen(false);onFocusBarcode();}}
                     >Cancelar</Button>
                 </DialogFooter>
             </DialogContent>

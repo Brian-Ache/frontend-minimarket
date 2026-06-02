@@ -38,7 +38,7 @@ export default function ModalAgregarProductoComun({
   const [precio, setPrecio] = useState<number>(0);
   const [cantidad, setCantidad] = useState<number>(1);
 
-  // 🔥 Centralizamos el cierre del modal aquí
+  //Centralizamos el cierre del modal aquí
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     
@@ -50,7 +50,7 @@ export default function ModalAgregarProductoComun({
     }
   };
 
-  // 🔥 Agregar producto
+  //Agregar producto
   const handleAgregar = (e?: React.FormEvent) => {
     e?.preventDefault();
 

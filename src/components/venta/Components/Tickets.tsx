@@ -1,5 +1,6 @@
 type Ticket = {
   id: number;
+  nombre: string;
   productos: Producto[];
 };
 
@@ -38,7 +39,6 @@ export default function Tickets({
         {/*recorre el array ticket y por cada ticket retorna un boton que referencia a ese ticket*/}
         {tickets.map((ticket) => {
           const isActive = ticket.id === activeTicket;
-
           return (
             <button
               key={ticket.id}
@@ -59,7 +59,7 @@ export default function Tickets({
                 }
               `}
             >
-              Ticket {ticket.id}
+              {ticket.nombre}
             </button>
           );
         })}

@@ -23,8 +23,8 @@ interface Ticket {
 
 // 2. Definimos una estructura base para los tickets vacÃ­os
 const TICKETS_VACIOS: Ticket[] = [
-  { id: 1,nombre: "carlos", productos: [] },
-  { id: 2,nombre: "brian", productos: [] },
+  { id: 1,nombre: "Ticket", productos: [] },
+  { id: 2,nombre: "Ticket", productos: [] },
 ];
 
 export default function VentaPage() {
@@ -296,6 +296,8 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el Ã
         onFocusBarcode={onFocusBarcode}
         openModalNavegarTickets={modales.navegar} //Le pasamos el estado real
         setOpenModalNavegarTickets={(open) => toggleModal("navegar", open)} // Modificador unificado
+        openModalAgregarTicket={modales.agregarTicket}//la pasamos el estado para saber si esta abierto  o no ese modal?
+        setOpenModalAgregarTicket={(open) => toggleModal("agregarTicket", open)}
       />
     </div>
   );

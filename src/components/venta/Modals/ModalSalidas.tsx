@@ -40,6 +40,24 @@ export default function ModalSalida({
         handleOpenChange(false);
     }
 
+////MANEJO DE MODAL CON TECLA Enter
+// Manejar navegación con teclado
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!open) return;
+        
+            if (e.key === "Enter") {
+                //console.log("Se agrego ticket con el nombre: "+ nombre);
+                enviarSalida(valorSalida);
+                setOpen(false); // Al pasar a false, el useEffect de arriba limpiará el input
+                onFocusBarcode();
+            }
+        }
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [open, setOpen,valorSalida,enviarSalida,onFocusBarcode]);
+
+
     return(
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent>

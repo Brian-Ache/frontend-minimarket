@@ -16,16 +16,21 @@ type Ticket = {
 
 type Props = {
   tickets: Ticket[];
+  total: number;
   activeTicket: number;
   agregar: (nombre: string) => void;
   eliminar : (id: number) => void;
-  total: number;
+  
   cambiar: (id: number) => void;
   onFocusBarcode: () => void;
   
-  // Nuevas props: Ahora el padre controla este modal
+  // Padre controla este modal(venta page)
   openModalNavegarTickets: boolean;
   setOpenModalNavegarTickets: (isOpen: boolean) => void;
+
+  //Padre controla el modal (venta page)
+  openModalAgregarTicket: boolean;
+  setOpenModalAgregarTicket: (isopen:boolean) => void;
   
 };
 
@@ -39,8 +44,8 @@ export default function FooterVenta({
   onFocusBarcode,
   openModalNavegarTickets,
   setOpenModalNavegarTickets,
-  openModalAgregarTickets,
-  setOpenModalAgregarTickets,
+  openModalAgregarTicket,
+  setOpenModalAgregarTicket,
 }: Props) {
 
   return (
@@ -64,13 +69,13 @@ export default function FooterVenta({
               />
             )}
 
-            <Button variant="secondary" onClick={()=> setOpenModalAgregarTickets(true)}>
+            <Button variant="secondary" onClick={()=> setOpenModalAgregarTicket(true)}>
               F6 - Nuevo Ticket
             </Button>
-            {openModalAgregarTickets && (
+            {openModalAgregarTicket && (
               <ModalAgregarTicket
-                open={openModalAgregarTickets}
-                setOpen={setOpenModalNavegarTickets} 
+                open={openModalAgregarTicket}
+                setOpen={setOpenModalAgregarTicket} 
                 onFocusBarcode={onFocusBarcode}
                 onAgregarTicket={agregar}
               />
