@@ -1,5 +1,5 @@
-import VentaPage from "../components/venta/VentaPage";
+import ProductoPage from "../components/producto/ProductoPage";
 
-export default function Venta() {
-  return <VentaPage />;
+export default function Productos() {
+  return <ProductoPage />;
 }

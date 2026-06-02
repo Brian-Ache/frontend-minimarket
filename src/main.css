@@ -5,7 +5,15 @@
 @tailwind components;
 @tailwind utilities;
 
+
+
 @layer base {
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
   .theme {
     --font-heading: var(--font-sans);
     --font-sans: 'Inter Variable', sans-serif
@@ -78,7 +86,7 @@
     --sidebar-ring: oklch(0.556 0 0)
   }
   * {
-    @apply border-border outline-ring/50;
+    @apply border border-border;
   }
   body {
     @apply bg-background text-foreground;
