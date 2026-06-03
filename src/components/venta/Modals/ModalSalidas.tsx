@@ -23,6 +23,7 @@ export default function ModalSalida({
     onFocusBarcode
 }:ModalSalida){
     const [valorSalida, setValorSalida] = useState(0);
+    const [mensaje, setMensaje] = useState("");
 
     // 🔥 Centralizamos el cierre del modal aquí
   const handleOpenChange = (isOpen: boolean) => {
@@ -70,6 +71,14 @@ export default function ModalSalida({
                         type="number"
                         value={valorSalida}
                         onChange={(e) => setValorSalida(Number(e.target.value))}
+                    />
+                </div>
+                <div>
+                    <input
+                        type="text"
+                        placeholder="Agregar una descripcion"
+                        value={mensaje}
+                        onChange={(e) => setMensaje(e.target.value)}        
                     />
                 </div>
                 <DialogFooter>

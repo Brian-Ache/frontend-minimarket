@@ -20,6 +20,7 @@ type Producto = {
 
 type Ticket = {
   id: number;
+  nombre : string;
   productos: Producto[];
 };
 
@@ -122,7 +123,7 @@ export default function ModalNavegarTickets({
                     }`}
                     onClick={() => setTicketSelecionado(index)}
                   >
-                    <td className="p-3">{ticket.id}</td>
+                    <td className="p-3">{ticket.nombre}</td>
                   </tr>
                 ))}
               </tbody>

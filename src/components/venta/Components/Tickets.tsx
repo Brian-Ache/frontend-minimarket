@@ -59,7 +59,7 @@ export default function Tickets({
                 }
               `}
             >
-              {ticket.nombre}
+              {ticket.nombre}({ticket.id})
             </button>
           );
         })}

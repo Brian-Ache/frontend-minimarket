@@ -74,7 +74,7 @@ export default function ModalBuscarProducto({
     });
   }, [busqueda, productos]);
 
-  // 🔑 Controla la apertura/cierre para enfocar Y resetear el buscador
+  // Controla la apertura/cierre para enfocar Y resetear el buscador
   useEffect(() => {
     if (open) {
       // Al abrir, forzamos el foco con un sutil delay por la animación del Dialog
@@ -83,7 +83,7 @@ export default function ModalBuscarProducto({
       }, 100);
       return () => clearTimeout(timeout);
     } else {
-      // 🛑 Al cerrar (Enter, Escape, Clic fuera, Botón Cerrar), reseteamos todo
+      // Al cerrar (Enter, Escape, Clic fuera, Botón Cerrar), reseteamos todo
       setBusqueda("");
       setSelectedIndex(0);
     }

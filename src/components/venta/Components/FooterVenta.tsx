@@ -89,7 +89,7 @@ export default function FooterVenta({
             </Button>
           </div>
 
-          {/* 💡 Simplificación: Usamos la prop 'total' directo, no hace falta un estado local duplicado */}
+          {/*Simplificación: Usamos la prop 'total' directo, no hace falta un estado local duplicado */}
           <div className="text-4xl lg:text-5xl font-bold text-blue-600">
             ${total.toFixed(2)}
           </div>
