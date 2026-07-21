@@ -4,7 +4,6 @@ import ItemsTable from "./ItemsTable";
 import CompraFooter from "./Footer";
 import { useEffect } from "react";
 import { useState } from "react";
-import Compras from "@/pages/Compras";
 
 //ACA TENGO EL OBJETO COMPRA QUE SE VA A IR ACTUALIZANDO CON LOS DATOS DE LOS COMPONENTES HIJOS, Y AL FINAL SE VA A ENVIAR AL BACKEND PARA GUARDAR LA COMPRA
 type Compra = {

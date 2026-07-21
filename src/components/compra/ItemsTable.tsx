@@ -13,7 +13,7 @@ interface ItemsTableProps {
 //NAVIGACION POR TECLADO EN LA TABLA DE TICKETS
 
 
-export default function ItemsTable({ items, setItems }: ItemsTableProps) {
+export default function ItemsTable({ items, /*setItems*/ }: ItemsTableProps) {
   return (
     <div className="h-full border rounded-md overflow-auto">
 

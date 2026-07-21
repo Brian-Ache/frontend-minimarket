@@ -256,7 +256,6 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
         )}
       </div>
 
-      {/* 📦 Cantidad - Corrige el problema del cero inicial */}
       <div>
         <label className="text-xs font-semibold text-slate-500 uppercase ml-1">Cantidad</label>
         <Input 
@@ -272,7 +271,6 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
         />
       </div>
 
-      {/* 💲 Costo */}
       <div>
         <label className="text-xs font-semibold text-slate-500 uppercase ml-1">Costo ($)</label>
         <Input 
@@ -282,7 +280,6 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
         />
       </div>
 
-      {/* 📈 Margen */}
       <div>
         <label className="text-xs font-semibold text-slate-500 uppercase ml-1">Margen %</label>
         <Input 
@@ -292,7 +289,6 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
         />
       </div>
 
-      {/* 💰 Precio de Venta (Bidireccional) */}
       <div>
         <label className="text-xs font-semibold text-slate-500 uppercase ml-1">P. Venta</label>
         <Input 

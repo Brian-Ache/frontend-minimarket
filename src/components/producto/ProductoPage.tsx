@@ -1,4 +1,3 @@
-import BarraBusquedaProducto from "./BarraBusquedaProducto";
 import FormProducto from "./FormProducto";
 import TablaProductos from "./TablaProductos";
 

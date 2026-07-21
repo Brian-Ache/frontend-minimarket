@@ -11,6 +11,7 @@ type Producto = {
 
 type Ticket = {
   id: number;
+  nombre: string;
   productos: Producto[];
 };
 
