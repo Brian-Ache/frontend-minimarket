@@ -199,7 +199,7 @@ export default function TablaProductos() {
   }, [filteredProducts]);
 
   return (
-    <div className="h-full flex flex-col border rounded-md overflow-hidden">
+    <div className="h-full flex flex-col border border-border rounded-md overflow-hidden">
       
       {/* Filtros */}
       <div className="p-2 flex gap-2 bg-slate-100">
@@ -228,7 +228,7 @@ export default function TablaProductos() {
       </div>
 
 
-      <select defaultValue={selectedProduct?.categoria}>
+      <select defaultValue={selectedProduct?.categoria} className="border border-border">
           <option value="">Todas las categorías</option>
           <option value="Bebidas">Bebidas</option>
           <option value="Alimentos">Alimentos</option>
@@ -254,7 +254,7 @@ export default function TablaProductos() {
               <tr
                 key={prod.id}
                 className={`
-                  border-t cursor-pointer
+                  border-t border-border cursor-pointer
                   ${index === selectedIndex ? "bg-blue-100" : "hover:bg-slate-50"}
                 `}
               > 
@@ -300,6 +300,10 @@ export default function TablaProductos() {
                   <span className="absolute left-3 top-2.5 text-slate-400">$</span>
                   <Input id="precio" type="number" defaultValue={selectedProduct.precio} className="pl-7" />
                 </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="margen" className="text-slate-600">Cantidad</Label>
+                <Input id="margen" type="number" defaultValue={selectedProduct.margen} />
               </div>
             </div>
 

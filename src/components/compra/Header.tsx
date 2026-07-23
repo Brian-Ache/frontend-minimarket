@@ -23,7 +23,7 @@ export default function Header({ datos, onChange }: HeaderProps) {
       <Input type="date" value={datos.fecha} onChange={(e) => onChange("fecha", e.target.value)}/>
       
       {/* desplegar dos opciones remito o factura con selec que despliegan*/}
-      <select className="w-full px-3 py-2 border rounded-md" value={datos.tipoComprobante} onChange={(e) => onChange("tipoComprobante", e.target.value)}>
+      <select className="w-full px-3 py-2 border border-border rounded-md" value={datos.tipoComprobante} onChange={(e) => onChange("tipoComprobante", e.target.value)}>
         <option value="">Tipo de comprobante</option>
         <option value="remito">Remito</option>
         <option value="factura">Factura</option>

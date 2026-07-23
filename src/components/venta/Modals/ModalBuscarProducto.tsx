@@ -162,7 +162,7 @@ export default function ModalBuscarProducto({
             onChange={(e) => setBusqueda(e.target.value)}
           />
 
-          <div className="border rounded-md overflow-auto flex-1">
+          <div className="border border-border rounded-md overflow-auto flex-1">
             <table className="w-full text-sm">
               <thead className="bg-muted sticky top-0">
                 <tr>
@@ -176,7 +176,7 @@ export default function ModalBuscarProducto({
                   <tr
                     ref={(el) => { rowsRef.current[index] = el; }}
                     key={producto.id}
-                    className={`scroll-mt-[40px] cursor-pointer border-t transition-colors ${
+                    className={`scroll-mt-[40px] cursor-pointer border-t border-border transition-colors ${
                       selectedIndex === index
                         ? "bg-blue-300 text-primary-foreground"
                         : "hover:bg-muted/50"

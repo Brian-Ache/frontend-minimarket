@@ -14,20 +14,20 @@ export default function Navbar() {
   const location = useLocation();
 
   return (
-    <div className="w-full border-b bg-background px-3 py-2 flex items-center justify-between">
+    <div className="w-full border-b border-border bg-background px-3 py-2 flex items-center justify-between">
 
       {/* 🏷️ Logo / Nombre */}
-      <div className="font-bold text-lg border-0">
+      <div className="font-bold text-lg">
         POS System
       </div>
 
       {/* 🧭 Navegación */}
-      <div className="flex gap-2 border-0">
+      <div className="flex gap-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
 
           return (
-            <Link className={"border-0"}key={item.path} to={item.path}>
+            <Link className={""}key={item.path} to={item.path}>
               <Button variant={isActive ? "default" : "ghost"}>
                 {item.name}
               </Button>

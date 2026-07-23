@@ -13,6 +13,7 @@ export default function FormProducto() {
     
     const nuevoPrecioVenta = precioCompra + (precioCompra * margen / 100);
     const precioRedondeado = Math.ceil(nuevoPrecioVenta / 50) * 50;
+
     setPrecioVenta(precioRedondeado);
   }, [margen]);
   
@@ -22,14 +23,15 @@ export default function FormProducto() {
       <Input placeholder="Código de barras" />
       <Input placeholder="Nombre" />
       <Input placeholder="Precio compra" />
-      <input type="number" placeholder="Margen" onChange={(e) => setMargen(parseFloat(e.target.value))} />
+      <input type="number" placeholder="Margen" className="border border-border" onChange={(e) => setMargen(parseFloat(e.target.value))} />
       <Input placeholder="Precio venta" value={precioVenta} />
-      <select>
+      <Input placeholder="Cantidad"/>
+      <select className="border border-border">
         <option value="">Categorías</option>
         <option value="Bebidas">Bebidas</option>
         <option value="Alimentos">Alimentos</option>
       </select>
-      <select>
+      <select className="border border-border">
         <option value="">Proveedores</option>
         <option value="Proveedor 1">Proveedor 1</option>
         <option value="Proveedor 2">Proveedor 2</option>

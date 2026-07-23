@@ -39,9 +39,9 @@ export default function PageCorte() {
     <div className="h-full flex flex-col gap-3 p-3 overflow-hidden">
 
       {/* HEADER DE LA PÁGINA */}
-      <div className="border-none shrink-0 flex items-center justify-between">
-        <div className="border-none   flex items-center gap-2">
-          <h1 className="border-none text-xl font-bold text-slate-900">
+      <div className="shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold text-slate-900">
             Corte de Caja Diario
           </h1>
           
@@ -53,7 +53,7 @@ export default function PageCorte() {
           )}
         </div>
 
-        <div className="border-none flex items-center gap-3">
+        <div className="flex items-center gap-3">
           
           {/* SELECTOR DE FECHA INTERACTIVO */}
           <Popover>
@@ -62,8 +62,8 @@ export default function PageCorte() {
                 variant="ghost"
                 className="h-8 px-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 transition-colors border border-slate-200/80 rounded-lg shadow-sm"
               >
-                <CalendarIcon className="border-none w-3.5 h-3.5 text-slate-500" />
-                <span className="border-none">{formatDate(selectedDate)}</span>
+                <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
+                <span>{formatDate(selectedDate)}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" /> {/* <- Ícono indicador */}
               </Button>
             </PopoverTrigger>
@@ -94,7 +94,7 @@ export default function PageCorte() {
       </div>
 
       {/* CONTENIDO PRINCIPAL DE 3 COLUMNAS */}
-      <div className="border-none flex-1 min-h-0 grid grid-cols-3 gap-3 overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-3 gap-3 overflow-hidden">
 
         {/* Columna 1: KPIs */}
         <InfoBalance /*date={selectedDate}*/ />
@@ -103,7 +103,7 @@ export default function PageCorte() {
         <VentasPorTipo /*date={selectedDate}*/ />
 
         {/* Columna 3: Salidas + Entradas */}
-        <div className="border-none flex flex-col gap-3 min-h-0">
+        <div className="flex flex-col gap-3 min-h-0">
           <Salidas /*date={selectedDate}*/ />
           <Entradas /*date={selectedDate}*/ />
         </div>

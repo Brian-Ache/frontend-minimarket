@@ -14,7 +14,7 @@ export default function HistorialCompras() {
 
         <Input type="date" />
 
-        <select className="w-full px-3 py-2 border rounded-md">
+        <select className="w-full px-3 py-2 border border-border rounded-md">
           <option value="">Tipo de comprobante</option>
           <option value="remito">Remito</option>
           <option value="factura">Factura</option>
@@ -24,13 +24,13 @@ export default function HistorialCompras() {
           Buscar
         </Button>
         {/* queremos poder buscar por producto para saber en que boleta vino ese producto  quien lo trajo*/}
-        <input placeholder="Buscar por producto" className="border rounded-md p-2" />
+        <input placeholder="Buscar por producto" className="border border-border rounded-md p-2" />
         {/* queremos saber cuales fueron las boletas que superaron cierto monto*/}
-        <input placeholder="Buscar por monto" className="border rounded-md p-2" />
+        <input placeholder="Buscar por monto" className="border border-border rounded-md p-2" />
       </div>
 
       {/* 📋 Tabla */}
-      <div className="flex-1 border rounded-md overflow-auto">
+      <div className="flex-1 border border-border rounded-md overflow-auto">
 
         <table className="w-full text-sm">
 
@@ -49,7 +49,7 @@ export default function HistorialCompras() {
             {[...Array(20)].map((_, i) => (
               <tr
                 key={i}
-                className="border-t hover:bg-slate-50 cursor-pointer"
+                className="border-t border-border hover:bg-slate-50 cursor-pointer"
               >
                 <td className="p-2">15/04/2026</td>
 

@@ -44,7 +44,7 @@ export default function PanelBusquedaProductos({ isOpen, onClose, onSelect }: Pr
           />
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto mt-4 border rounded-md">
+        <div className="flex-1 overflow-y-auto mt-4 border border-border rounded-md">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 sticky top-0">
               <tr>
@@ -57,7 +57,7 @@ export default function PanelBusquedaProductos({ isOpen, onClose, onSelect }: Pr
               {productosFiltrados.map(p => (
                 <tr 
                   key={p.id} 
-                  className="border-t hover:bg-blue-50 cursor-pointer"
+                  className="border-t border-border hover:bg-blue-50 cursor-pointer"
                   onClick={() => {
                     onSelect(p.id.toString());
                     onClose();

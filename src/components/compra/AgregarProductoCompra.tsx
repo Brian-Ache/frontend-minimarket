@@ -219,7 +219,7 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
     //console.log("Producto agregado:", form);
   }
   return (
-    <div className="grid grid-cols-1 md:grid-cols-8 gap-2 items-end bg-slate-50 p-3 rounded-lg border-dashed border-2">
+    <div className="grid grid-cols-1 md:grid-cols-8 gap-2 items-end bg-slate-50 p-3 rounded-lg border-dashed border-2 border-border">
       
       {/* 🔎 Producto - Buscador con lista desplegable de un solo click */}
       <div className="md:col-span-2 relative" ref={contenedorRef}>
@@ -234,7 +234,7 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
         />
         {/* Mostrar sugerencias solo si hay texto y productos que coincidan */}
         {mostrarSugerencias && sugerencias.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 overflow-hidden rounded-md border bg-white shadow-lg">
+          <div className="absolute z-50 w-full mt-1 overflow-hidden rounded-md border border-border bg-white shadow-lg">
             {/* Mapear las sugerencias y mostrar cada producto como un botón en la lista
             y tambien el index del producto para comparar con el index seleccionado y aplicar estilos condicionales*/}
             {sugerencias.map((prod, index) => (

@@ -1,3 +1,5 @@
+import ReportesPage from "../components/reportes/ReportesPage";
+
 export default function Reportes() {
-  return <div>Reportes</div>;
+  return <ReportesPage></ReportesPage>
 }

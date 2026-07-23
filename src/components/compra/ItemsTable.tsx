@@ -15,7 +15,7 @@ interface ItemsTableProps {
 
 export default function ItemsTable({ items, /*setItems*/ }: ItemsTableProps) {
   return (
-    <div className="h-full border rounded-md overflow-auto">
+    <div className="h-full border border-border rounded-md overflow-auto">
 
       <table className="w-full text-sm">
 
@@ -39,7 +39,7 @@ export default function ItemsTable({ items, /*setItems*/ }: ItemsTableProps) {
             </tr>
           ) : (
             items.map((item, i) => (
-              <tr key={`${item.productoId}-${i}`} className="border-t hover:bg-slate-50">
+              <tr key={`${item.productoId}-${i}`} className="border-t border-border hover:bg-slate-50">
                 <td className="p-2">{item.productoId}</td>
                 <td className="p-2 text-right">{item.cantidad}</td>
                 <td className="p-2 text-right">${item.costo}</td>

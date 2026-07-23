@@ -102,7 +102,7 @@ export default function ModalNavegarTickets({
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          <div className="border rounded-md overflow-auto flex-1">
+          <div className="border border-border rounded-md overflow-auto flex-1">
             <table className="w-full text-sm">
               <thead className="bg-muted sticky top-0">
                 <tr>
@@ -116,7 +116,7 @@ export default function ModalNavegarTickets({
                   <tr
                     ref={(el) => { rowsRef.current[index] = el; }}
                     key={ticket.id}
-                    className={`scroll-mt-[40px] cursor-pointer border-t transition-colors ${
+                    className={`scroll-mt-[40px] cursor-pointer border-t border-border transition-colors ${
                       ticketSelecionado === index
                         ? "bg-blue-300 text-primary-foreground"
                         : "hover:bg-muted/50"

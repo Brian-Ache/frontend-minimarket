@@ -77,6 +77,7 @@ export default function ModalSalida({
                     <input
                         type="text"
                         placeholder="Agregar una descripcion"
+                        className="border border-border"
                         value={mensaje}
                         onChange={(e) => setMensaje(e.target.value)}        
                     />

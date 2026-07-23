@@ -51,7 +51,7 @@ export default function Tickets({
               }}
               className={`
                 px-4 py-1 text-sm font-medium
-                border relative rounded-t-md transition-colors
+                border border-border relative rounded-t-md transition-colors
                 ${
                   isActive
                     ? "bg-slate-100 z-20 -mb-px border-b-transparent font-semibold"
@@ -66,7 +66,7 @@ export default function Tickets({
       </div>
 
       {/* Tabla con alturas y anchos fijos para evitar "saltos" */}
-      <div className="flex-1 min-h-0 overflow-auto bg-background border rounded-b-md table-fixed-layout">
+      <div className="flex-1 min-h-0 overflow-auto bg-background border border-border rounded-b-md table-fixed-layout">
         {/*table-fixed congela el ancho de las columnas */}
         <table className="w-full text-sm table-fixed"> 
           <thead className="bg-slate-100 sticky top-0 shadow-sm z-10">
