@@ -36,10 +36,10 @@ export default function PageCorte() {
   };
 
   return (
-    <div className="h-full flex flex-col gap-3 p-3 overflow-hidden">
+    <div className="min-h-full md:h-full flex flex-col gap-3 p-3 overflow-y-auto md:overflow-hidden">
 
       {/* HEADER DE LA PÁGINA */}
-      <div className="shrink-0 flex items-center justify-between">
+      <div className="shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold text-slate-900">
             Corte de Caja Diario
@@ -53,7 +53,7 @@ export default function PageCorte() {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
           
           {/* SELECTOR DE FECHA INTERACTIVO */}
           <Popover>
@@ -94,7 +94,7 @@ export default function PageCorte() {
       </div>
 
       {/* CONTENIDO PRINCIPAL DE 3 COLUMNAS */}
-      <div className="flex-1 min-h-0 grid grid-cols-3 gap-3 overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:flex-1 md:min-h-0 md:overflow-hidden">
 
         {/* Columna 1: KPIs */}
         <InfoBalance /*date={selectedDate}*/ />

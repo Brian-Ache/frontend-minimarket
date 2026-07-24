@@ -7,7 +7,7 @@ const salidasMock = [
 
 export default function Salidas() {
   return (
-    <div className="flex-1 min-h-0 flex flex-col bg-background border border-border rounded-md overflow-hidden">
+    <div className="min-h-0 md:h-full flex flex-col bg-background border border-border rounded-md overflow-hidden">
 
       <div className="shrink-0 flex items-center justify-between p-3 border-b border-border bg-slate-100">
         <h3 className="font-semibold text-slate-700">
@@ -18,7 +18,7 @@ export default function Salidas() {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-visible md:overflow-y-auto">
         <div className="flex flex-col">
           {salidasMock.map((salida) => (
             <div

@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default function VentasPorTipo() {
   return (
-    <Card className="h-full flex flex-col bg-background border border-border ring-0 shadow-none">
+    <Card className="min-h-0 md:h-full flex flex-col bg-background border border-border ring-0 shadow-none">
       <CardHeader className="shrink-0 pb-2">
         <CardTitle className="mt-2 text-center text-xs font-bold tracking-wider text-slate-500 uppercase">
           Ingresos por Método de Pago
@@ -12,7 +12,7 @@ export default function VentasPorTipo() {
 
       <Separator className="my-1" />
 
-      <CardContent className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 p-4">
+      <CardContent className="flex-1 min-h-0 overflow-y-visible md:overflow-y-auto flex flex-col gap-3 p-4">
 
         {/* Efectivo */}
         <div className="p-4 rounded-lg bg-slate-50 border border-slate-200/60 flex flex-col">

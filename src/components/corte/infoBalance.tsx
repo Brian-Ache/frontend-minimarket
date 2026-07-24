@@ -2,14 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function InfoBalance() {
   return (
-    <Card className="h-full flex flex-col bg-background border border-border ring-0 shadow-none">
+    <Card className="min-h-0 md:h-full flex flex-col bg-background border border-border ring-0 shadow-none">
       <CardHeader className="shrink-0">
         <CardTitle className="mt-2 text-center text-xs font-bold tracking-wider text-slate-500 uppercase">
           Balance del Día
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 min-h-0 overflow-y-auto flex flex-col justify-center gap-3 p-4"> 
+      <CardContent className="flex-1 min-h-0 overflow-y-visible md:overflow-y-auto flex flex-col justify-center gap-3 p-4"> 
 
         {/* Fondo Inicial */}
         <div className="p-4 rounded-lg bg-slate-50 border border-slate-200/60">
