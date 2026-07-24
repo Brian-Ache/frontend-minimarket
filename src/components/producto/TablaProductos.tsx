@@ -150,12 +150,16 @@ export const productosMock: Producto[] = [
 const productos2: Producto[] = productosMock; 
 export default function TablaProductos() {
   const [search, setSearch] = useState("");
+  const [proveedorFiltro, setProveedorFiltro] = useState<string | undefined>(undefined);
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string | undefined>(undefined);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [openModal, setOpenModal] = useState(false);
 
   // 🔥 1. Filtrado
   const filteredProducts = productos2.filter((p) =>
-    p.nombre.toLowerCase().startsWith(search.toLowerCase())
+    p.nombre.toLowerCase().startsWith(search.toLowerCase()) &&
+    (!proveedorFiltro || p.proveedor === proveedorFiltro) &&
+    (!categoriaFiltro || p.categoria === categoriaFiltro)
   );
 
   // 🔥 2. Producto seleccionado
@@ -211,29 +215,97 @@ export default function TablaProductos() {
         
 
         {/* Selector de Proveedor */}
+        
         <div className="grid gap-2">
-          <Label htmlFor="proveedor" className="text-slate-600">Proveedor</Label>
-          {/*si hay un producto seleccionado, muestra su proveedor, de lo contrario muestra el placeholder*/}
-          <Select defaultValue={selectedProduct?.proveedor}>
+          <Select 
+                value={proveedorFiltro}
+                onValueChange={(value) =>
+                  setProveedorFiltro(value === "__ALL__" ? undefined : value)
+                }
+          >
             <SelectTrigger id="proveedor">
-              <SelectValue placeholder="Seleccionar..." />
+              <SelectValue placeholder="Proveedor" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Coca">Coca Cola</SelectItem>
-              <SelectItem value="Pepsi">Pepsi</SelectItem>
-              <SelectItem value="Local">Distribuidora Local</SelectItem>
+              <SelectItem value="__ALL__">Todas</SelectItem>
+              <SelectItem value="Femsa Argentina">Femsa Argentina</SelectItem>
+              <SelectItem value="Cervecería y Maltería Quilmes">Cervecería y Maltería Quilmes</SelectItem>
+              <SelectItem value="Aguas Danone">Aguas Danone</SelectItem>
+              <SelectItem value="Unilever Argentina">Unilever Argentina</SelectItem>
+              <SelectItem value="Arcor">Arcor</SelectItem>
+              <SelectItem value="Paladini">Paladini</SelectItem>
+              <SelectItem value="Bimbo Argentina">Bimbo Argentina</SelectItem>
+              <SelectItem value="Bagley">Bagley</SelectItem>
+              <SelectItem value="Molinos Río de la Plata">Molinos Río de la Plata</SelectItem>
+              <SelectItem value="Mondelēz International">Mondelēz International</SelectItem>
+              <SelectItem value="Fratelli Branca">Fratelli Branca</SelectItem>
+              <SelectItem value="Mastellone Hermanos">Mastellone Hermanos</SelectItem>
+              <SelectItem value="Milkaut">Milkaut</SelectItem>
+              <SelectItem value="Distribuidora Luro">Distribuidora Luro</SelectItem>
+              <SelectItem value="Riera">Riera</SelectItem>
+              <SelectItem value="Dos Anclas">Dos Anclas</SelectItem>
+              <SelectItem value="Menoyo">Menoyo</SelectItem>
+              <SelectItem value="Softys Argentina">Softys Argentina</SelectItem>
+              <SelectItem value="Grandes Marcas">Grandes Marcas</SelectItem>
+              <SelectItem value="Procter & Gamble">Procter & Gamble</SelectItem>
+              <SelectItem value="Clorox Argentina">Clorox Argentina</SelectItem>
+              <SelectItem value="Alicorp">Alicorp</SelectItem>
+              <SelectItem value="Nestlé Argentina">Nestlé Argentina</SelectItem>
+              <SelectItem value="Cooperativa Liebig">Cooperativa Liebig</SelectItem>
+              <SelectItem value="Las Marías">Las Marías</SelectItem>
+              <SelectItem value="La Virginia">La Virginia</SelectItem>
+              <SelectItem value="Colgate-Palmolive">Colgate-Palmolive</SelectItem>
+              <SelectItem value="Essity">Essity</SelectItem>
+              <SelectItem value="Jorgito">Jorgito</SelectItem>
+              <SelectItem value="Guaymallén">Guaymallén</SelectItem>
+              <SelectItem value="Havanna">Havanna</SelectItem>
+              <SelectItem value="Krachitos">Krachitos</SelectItem>
+              <SelectItem value="Marfrig Argentina">Marfrig Argentina</SelectItem>
+              <SelectItem value="McCain Argentina">McCain Argentina</SelectItem>
+              <SelectItem value="BRF Argentina">BRF Argentina</SelectItem>
+              <SelectItem value="Tabacalera Sarandí">Tabacalera Sarandí</SelectItem>
+              <SelectItem value="Nestlé Purina">Nestlé Purina</SelectItem>
+              <SelectItem value="Mars Argentina">Mars Argentina</SelectItem>
+              <SelectItem value="Hielo Local">Hielo Local</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        <div className="grid gap-2">
+          <Select
+            value={categoriaFiltro}
+            onValueChange={(value) =>
+              setCategoriaFiltro(value === "__ALL__" ? undefined : value)
+            }
+          >
+            <SelectTrigger id="categoria">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__ALL__">Todas</SelectItem>
+              <SelectItem value="Bebidas">Bebidas</SelectItem>
+              <SelectItem value="Bebidas Con Alcohol">Bebidas Con Alcohol</SelectItem>
+              <SelectItem value="Lácteos">Lácteos</SelectItem>
+              <SelectItem value="Fiambrería">Fiambrería</SelectItem>
+              <SelectItem value="Panadería">Panadería</SelectItem>
+              <SelectItem value="Almacén">Almacén</SelectItem>
+              <SelectItem value="Limpieza">Limpieza</SelectItem>
+              <SelectItem value="Perfumería">Perfumería</SelectItem>
+              <SelectItem value="Golosinas">Golosinas</SelectItem>
+              <SelectItem value="Snacks">Snacks</SelectItem>
+              <SelectItem value="Congelados">Congelados</SelectItem>
+              <SelectItem value="Lácteos y Frescos">Lácteos y Frescos</SelectItem>
+              <SelectItem value="Cigarrillos">Cigarrillos</SelectItem>
+              <SelectItem value="Kiosco">Kiosco</SelectItem>
+              <SelectItem value="Mascotas">Mascotas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
       </div>
 
 
-      <select defaultValue={selectedProduct?.categoria} className="border border-border">
-          <option value="">Todas las categorías</option>
-          <option value="Bebidas">Bebidas</option>
-          <option value="Alimentos">Alimentos</option>
-      </select>
-      {/*<Input placeholder="Proveedor..." />*/}
+      
       
       {/* Tabla de productos */}
       <div className="flex-1 overflow-auto">

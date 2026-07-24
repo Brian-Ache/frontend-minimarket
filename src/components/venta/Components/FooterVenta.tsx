@@ -18,6 +18,7 @@ type Ticket = {
 type Props = {
   tickets: Ticket[];
   total: number;
+  cantidadProcductosTicket: number;
   activeTicket: number;
   agregar: (nombre: string) => void;
   eliminar : (id: number) => void;
@@ -40,7 +41,8 @@ export default function FooterVenta({
   activeTicket, 
   agregar, 
   eliminar, 
-  total, 
+  total,
+  cantidadProcductosTicket,
   cambiar, 
   onFocusBarcode,
   openModalNavegarTickets,
@@ -98,21 +100,10 @@ export default function FooterVenta({
 
         {/* FILA 2 */}
         <div className="flex justify-between text-sm mt-1">
-          <div>
-            <span className="text-muted-foreground block text-xs">Total:</span>
-            <div className="font-bold text-base">${total.toFixed(2)}</div>
+          <div  className="flex gap-2">
+            <span className="text-muted-foreground block text-xs">Cantidad productos:</span>
+            <div className="">{cantidadProcductosTicket}</div>
           </div>
-
-          <div>
-            <span className="text-muted-foreground block text-xs">Pagó Con:</span>
-            <div className="font-bold text-base">${total.toFixed(2)}</div>
-          </div>
-
-          <div>
-            <span className="text-muted-foreground block text-xs">Cambio:</span>
-            <div className="font-bold text-base">$0.00</div>
-          </div>
-
           <div className="flex gap-2">
             <Button className="bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs px-3">
               Reimprimir Último Ticket

@@ -27,7 +27,7 @@ export default function BarraBusqueda({ onAgregar,inputRef }: BarraProps) {
         onChange={(e) => setCodigo(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleAction()}
       />
-      <Button className="h-12 px-6" onClick={handleAction}>
+      <Button className="bg-[#4a90e2] h-12 px-6" onClick={handleAction}>
         ENTER - Agregar Producto
       </Button>
     </div>

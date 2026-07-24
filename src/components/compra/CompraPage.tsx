@@ -16,9 +16,7 @@ export default function CompraPage() {
         defaultValue="nueva"
         className="w-full h-full flex flex-col"
       >
-
-        {/* 🔝 Tabs */}
-        <TabsList className="w-fit">
+        <TabsList className="w-fit gap-2">
           <TabsTrigger value="nueva">
             Nueva Compra
           </TabsTrigger>
@@ -28,7 +26,6 @@ export default function CompraPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* 📦 Nueva compra */}
         <TabsContent
           value="nueva"
           className="flex-1 min-h-0 mt-3"
@@ -36,7 +33,6 @@ export default function CompraPage() {
           <NuevaCompra />
         </TabsContent>
 
-        {/* 📋 Historial */}
         <TabsContent
           value="historial"
           className="flex-1 min-h-0 mt-3"

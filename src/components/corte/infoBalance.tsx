@@ -1,16 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 export default function InfoBalance() {
   return (
     <Card className="h-full flex flex-col bg-background border border-border ring-0 shadow-none">
-      <CardHeader className="shrink-0 pb-2">
+      <CardHeader className="shrink-0">
         <CardTitle className="mt-2 text-center text-xs font-bold tracking-wider text-slate-500 uppercase">
           Balance del Día
         </CardTitle>
       </CardHeader>
-
-      <Separator className="my-1" />
 
       <CardContent className="flex-1 min-h-0 overflow-y-auto flex flex-col justify-center gap-3 p-4"> 
 

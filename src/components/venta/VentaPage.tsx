@@ -29,8 +29,11 @@ const TICKETS_VACIOS: Ticket[] = [
 
 export default function VentaPage() {
 
-  //calcula el total de los productos de un ticket
+  //calcula el total de venta de los productos de un ticket
   const [total, setTotal] = useState(0);
+
+  //calcula el total de productos que tiene el ticket cada vez
+  const [cantidadProcductosTicket, setCantidadProcductosTicket] = useState(0);
 
   //El estado inicial de los tickets
   const [tickets, setTickets] = useState<Ticket[]>(TICKETS_VACIOS);
@@ -234,6 +237,20 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el Ã
     setTotal(totalCalculado);
   }, [currentTicket]);/*cada vez que cambia algo del ticket actual se ejecuta este useEffect*/
 
+//FUNCION PARA CALCULAR CUANTOS PRODUCTOS TIENE EL TICKET ACTUAL
+  useEffect(()=>{
+    //si tiene productos pasa el total si no tiene pasa 0
+    let cantidadProductos = 0;
+    //por cada productos del ticket actual
+    //sumar la cantidad que tiene cada producto
+    currentTicket?.productos.forEach(producto => {
+        cantidadProductos += producto.cantidad;
+    });
+    console.log(currentTicket);
+    setCantidadProcductosTicket(cantidadProductos);
+  }, [currentTicket]);
+
+
   //ENLACE DE CUSTOM HOOK PARA NAVEGAR LA TABLA DE PRODUCTOS DEL TICKET Y ATAJOS DE TECLADO
   useVentaShortcuts({
     tickets,
@@ -288,6 +305,7 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el Ã
       <FooterVenta 
         tickets={tickets}
         total={total} 
+        cantidadProcductosTicket={cantidadProcductosTicket}
         activeTicket={activeTicket} 
         agregar={crearNuevoTicket} 
         eliminar={eliminarTicket} 
