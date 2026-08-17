@@ -6,31 +6,41 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 export default function FormProducto() {
 
+  const [codigo, setCodigo] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [precioCompra, setPrecioCompra] = useState(0);
   const [margen, setMargen] = useState(0);
   const [precioVenta, setPrecioVenta] = useState(0);
   const [categoriaSelect, setCategoriaSelect] = useState("");
   const [proveedorSelect, setProveedorSelect] = useState("");
  
-  //funcion para que  cuando el margen cambie, se actualice el precio de venta y lo redonde de 50 en 50,segun el precio de compra 
   useEffect(() => {
-    const precioCompra = parseFloat((document.querySelector('input[placeholder="Precio compra"]') as HTMLInputElement)?.value || "0");
-    
     const nuevoPrecioVenta = precioCompra + (precioCompra * margen / 100);
     const precioRedondeado = Math.ceil(nuevoPrecioVenta / 50) * 50;
-
     setPrecioVenta(precioRedondeado);
-  }, [margen]);
+  }, [precioCompra, margen]);
+
+  const limpiarFormulario = () => {
+    setCodigo("");
+    setNombre("");
+    setPrecioCompra(0);
+    setMargen(0);
+    setPrecioVenta(0);
+    setCategoriaSelect("");
+    setProveedorSelect("");
+  };
   
   return (
     <div className="grid grid-cols-6 gap-2">
 
-      <Input className="col-span-1" placeholder="Código de barras" />
-      <Input className="col-span-1" placeholder="Nombre" />
-      <Input className="col-span-1" placeholder="Precio compra" />
-      <Input className="col-span-1" placeholder="Margen"
-        onChange={(e) => setMargen(parseFloat(e.target.value))}
+      <Input className="col-span-1" placeholder="Código de barras" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+      <Input className="col-span-1" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+      <Input className="col-span-1" placeholder="Precio compra" type="number" value={precioCompra || ""} onChange={(e) => setPrecioCompra(Number(e.target.value))} />
+      <Input className="col-span-1" placeholder="Margen" type="number"
+        value={margen || ""}
+        onChange={(e) => setMargen(parseFloat(e.target.value) || 0)}
       />
-      <Input className="col-span-1" placeholder="Precio venta" value={precioVenta} readOnly />
+      <Input className="col-span-1" placeholder="Precio venta" value={precioVenta || ""} readOnly />
       <div className="col-span-1" />
 
       <div className="col-span-1 grid gap-2">
@@ -89,7 +99,7 @@ export default function FormProducto() {
         <Button className="bg-emerald-600 text-white">
           Guardar
         </Button>
-        <Button variant="secondary">
+        <Button variant="secondary" onClick={limpiarFormulario}>
           Limpiar
         </Button>
       </div>

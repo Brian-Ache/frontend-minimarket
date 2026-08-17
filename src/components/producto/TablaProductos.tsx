@@ -148,12 +148,14 @@ export const productosMock: Producto[] = [
 
 //LOS PRODUCOS QUE TRAE DIRECTO DE LA BD DEBEN CONVINARSE CON LA TABLA PRODUCTOS Y DE LA TABLA CANTIDADXPRODUCTO
 const productos2: Producto[] = productosMock; 
-export default function TablaProductos() {
+export default function TablaProductos(){
   const [search, setSearch] = useState("");
   const [proveedorFiltro, setProveedorFiltro] = useState<string | undefined>(undefined);
   const [categoriaFiltro, setCategoriaFiltro] = useState<string | undefined>(undefined);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [openModal, setOpenModal] = useState(false);
+  const [categoriaSelect, setCategoriaSelect] = useState("");
+  const [proveedorSelect, setProveedorSelect] = useState("");
 
   // 🔥 1. Filtrado
   const filteredProducts = productos2.filter((p) =>
@@ -363,6 +365,13 @@ export default function TablaProductos() {
             {/* Dos columnas para números */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
+                <Label htmlFor="precio" className="text-slate-600">Precio Compra</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400">$</span>
+                  <Input id="precio" type="number" defaultValue={selectedProduct.precio} className="pl-7" />
+                </div>
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="margen" className="text-slate-600">Margen (%)</Label>
                 <Input id="margen" type="number" defaultValue={selectedProduct.margen} />
               </div>
@@ -384,7 +393,10 @@ export default function TablaProductos() {
       {/* Selector de Categoría */}
       <div className="grid gap-2">
         <Label htmlFor="categoria" className="text-slate-600">Categoría</Label>
-        <Select defaultValue={selectedProduct?.categoria}>
+        <Select
+          value={categoriaSelect}
+          onValueChange={(value) => setCategoriaSelect(value)}
+        >
           <SelectTrigger id="categoria">
             <SelectValue placeholder="Seleccionar..." />
           </SelectTrigger>
@@ -392,6 +404,11 @@ export default function TablaProductos() {
             <SelectItem value="Bebidas">Bebidas</SelectItem>
             <SelectItem value="Alimentos">Alimentos</SelectItem>
             <SelectItem value="Limpieza">Limpieza</SelectItem>
+            <SelectItem value="Congelados">Congelados</SelectItem>
+            <SelectItem value="Lácteos y Frescos">Lácteos y Frescos</SelectItem>
+            <SelectItem value="Cigarrillos">Cigarrillos</SelectItem>
+            <SelectItem value="Kiosco">Kiosco</SelectItem>
+            <SelectItem value="Mascotas">Mascotas</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -399,7 +416,10 @@ export default function TablaProductos() {
       {/* Selector de Proveedor */}
       <div className="grid gap-2">
         <Label htmlFor="proveedor" className="text-slate-600">Proveedor</Label>
-        <Select defaultValue={selectedProduct?.proveedor}>
+        <Select
+          value={proveedorSelect}
+          onValueChange={(value) => setProveedorSelect(value)}
+        >
           <SelectTrigger id="proveedor">
             <SelectValue placeholder="Seleccionar..." />
           </SelectTrigger>
@@ -407,6 +427,17 @@ export default function TablaProductos() {
             <SelectItem value="Coca">Coca Cola</SelectItem>
             <SelectItem value="Pepsi">Pepsi</SelectItem>
             <SelectItem value="Local">Distribuidora Local</SelectItem>
+            <SelectItem value="Cervecería y Maltería Quilmes">Cervecería y Maltería Quilmes</SelectItem>
+            <SelectItem value="Aguas Danone">Aguas Danone</SelectItem>
+            <SelectItem value="Unilever Argentina">Unilever Argentina</SelectItem>
+            <SelectItem value="Arcor">Arcor</SelectItem>
+            <SelectItem value="Paladini">Paladini</SelectItem>
+            <SelectItem value="Bimbo Argentina">Bimbo Argentina</SelectItem>
+            <SelectItem value="Bagley">Bagley</SelectItem>
+            <SelectItem value="Molinos Río de la Plata">Molinos Río de la Plata</SelectItem>
+            <SelectItem value="Mondelēz International">Mondelēz International</SelectItem>
+            <SelectItem value="Fratelli Branca">Fratelli Branca</SelectItem>
+            <SelectItem value="Mastellone Hermanos">Mastellone Hermanos</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -416,7 +447,7 @@ export default function TablaProductos() {
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => setOpenModal(false)}>Cancelar</Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">Guardar Cambios</Button>
+          <Button className="bg-emerald-600 hover:bg-blue-700">Guardar Cambios</Button>
         </DialogFooter>
       </DialogContent>
       </Dialog>

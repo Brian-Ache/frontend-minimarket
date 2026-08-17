@@ -5,6 +5,7 @@ import Compras from "../pages/Compras";
 import Corte from "../pages/Corte";
 import Reportes from "../pages/Reportes";
 import Configuracion from "../pages/Configuracion";
+import Login from "../pages/Login";
 
 export default function AppRouter() {
   return (
@@ -15,6 +16,7 @@ export default function AppRouter() {
       <Route path="/corte" element={<Corte />} />
       <Route path="/reportes" element={<Reportes />} />
       <Route path="/configuracion" element={<Configuracion />} />
+      <Route path="/login" element={<Login />} />
     </Routes>
   );
 }
