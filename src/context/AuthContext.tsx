@@ -36,11 +36,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await api.post<LoginResponse>("/api/auth/login", { usuario, password });
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      setToken(data.token);
-      setUser(data.user);
+      const { data } = await api.post<LoginResponse>("/api/auth/v1/login", { username: usuario, password });
+      localStorage.setItem("token", data.accessToken);
+      localStorage.setItem("user", JSON.stringify(data.usuario));
+      setToken(data.accessToken);
+      setUser(data.usuario);
     } catch (err: any) {
       const msg = err.response?.data?.message || "Error al iniciar sesión";
       setError(msg);

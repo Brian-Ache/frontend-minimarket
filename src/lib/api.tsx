@@ -4,7 +4,7 @@ import axios from "axios";
 //LA RUTA EL ELEMENTO QUE SE USA PARA CONECTAR A LA API(BACKEND)
 //Y HACERLE CONSULTAS Y PETICIONES DESDE EL FRONT MEDIANTE AXIOS
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: "http://localhost:8080",
 });
 
 api.interceptors.request.use((config) => {
