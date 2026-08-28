@@ -1,3 +1,19 @@
+/**
+ * TablaProductos — Tabla paginada de productos con filtros.
+ *
+ * Recibe `refreshKey` y lo pasa a useProductos(). Cuando refreshKey cambia,
+ * el hook re-ejecuta el fetch de productos, manteniendo la tabla actualizada.
+ * Esto se necesita porque la tabla y el formulario de carga son hermanos
+ * dentro de ProductoPage, y no comparten estado directamente.
+ *
+ * Recibe `onRefresh` como callback para avisar al padre que debe incrementar
+ * refreshKey después de modificar un producto, de forma que la tabla se
+ * re-renderice con los datos actualizados.
+ *
+ * El modal de modificación usa el hook useModificarProducto() que encapsula
+ * todo el estado y la lógica del formulario, incluyendo la actualización
+ * de stock vía el endpoint POST /api/inventario/v1/controlar.
+ */
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,9 +37,16 @@ import {
 } from "@/components/ui/dialog";
 
 import { useProductos } from "@/hooks/useProductos";
-import type { ProductoResponse } from "@/types/producto";
+import { getStockBatch } from "@/services/productoService";
+import useModificarProducto from "@/hooks/useModificarProducto";
+import type { ProductoResponse } from "@/types/response/productoResponse";
 
-export default function TablaProductos() {
+interface TablaProductosProps {
+  refreshKey?: number;
+  onRefresh?: () => void;
+}
+
+export default function TablaProductos({ refreshKey, onRefresh }: TablaProductosProps) {
   const {
     productos,
     loading,
@@ -40,17 +63,65 @@ export default function TablaProductos() {
     totalElements,
     categorias,
     proveedores,
-  } = useProductos();
+  } = useProductos(refreshKey);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [openModal, setOpenModal] = useState(false);
 
+  // Stock de los productos de la página actual
+  const [stockMap, setStockMap] = useState<Map<string, number>>(new Map());
+
   const selectedProduct: ProductoResponse | null =
     productos.length > 0 ? productos[selectedIndex] : null;
+
+  const stockInicial = selectedProduct ? (stockMap.get(selectedProduct.id) ?? 0) : 0;
+
+  const {
+    modalBarcode, setModalBarcode,
+    modalNombre, setModalNombre,
+    modalCosto, setModalCosto,
+    modalMargen, setModalMargen,
+    modalPrecio,
+    modalManejaLotes, setModalManejaLotes,
+    modalCategoriaId, setModalCategoriaId,
+    modalProveedorId, setModalProveedorId,
+    modalCantidad, setModalCantidad,
+    modalCategorias, modalProveedores,
+    modalSaving, modalError,
+    guardar,
+  } = useModificarProducto({ producto: selectedProduct, stockInicial, onRefresh });
 
   useEffect(() => {
     setSelectedIndex(0);
   }, [search, categoriaId, proveedorId, productos]);
+
+  useEffect(() => {
+    if (productos.length === 0) {
+      setStockMap(new Map());
+      return;
+    }
+    const ids = productos.map((p) => p.id);
+    getStockBatch(ids)
+      .then((stocks) => {
+        const map = new Map<string, number>();
+        stocks.forEach((s) => map.set(s.idProducto, s.cantidad));
+        setStockMap(map);
+      })
+      .catch(() => setStockMap(new Map()));
+  }, [productos, refreshKey]);
+
+  useEffect(() => {
+    if (openModal && selectedProduct) {
+      setModalBarcode(selectedProduct.barcode);
+      setModalNombre(selectedProduct.nombre);
+      setModalCosto(selectedProduct.costo ?? 0);
+      setModalMargen(selectedProduct.margen ?? 0);
+      setModalManejaLotes(selectedProduct.manejaLotes);
+      setModalCategoriaId(selectedProduct.categoria?.id ?? null);
+      setModalProveedorId(selectedProduct.proveedor?.id ?? null);
+      setModalCantidad(stockMap.get(selectedProduct.id) ?? 0);
+    }
+  }, [openModal, selectedProduct, stockMap]);
 
   // Navegacion teclado
   useEffect(() => {
@@ -146,9 +217,11 @@ export default function TablaProductos() {
               <tr>
                 <th className="p-2 text-left">Codigo</th>
                 <th className="p-2 text-left">Nombre</th>
+                <th className="p-2 text-right">Costo</th>
                 <th className="p-2 text-right">Precio</th>
                 <th className="p-2 text-left">Categoria</th>
                 <th className="p-2 text-left">Proveedor</th>
+                <th className="p-2 text-right">Cantidad</th>
               </tr>
             </thead>
             <tbody>
@@ -162,14 +235,16 @@ export default function TablaProductos() {
                 >
                   <td className="p-2">{prod.barcode}</td>
                   <td className="p-2">{prod.nombre}</td>
+                  <td className="p-2 text-right">${prod.costo ?? "-"}</td>
                   <td className="p-2 text-right">${prod.precio}</td>
                   <td className="p-2">{prod.categoria?.nombre ?? "-"}</td>
                   <td className="p-2">{prod.proveedor?.nombre ?? "-"}</td>
+                  <td className="p-2 text-right">{stockMap.get(prod.id) ?? "-"}</td>
                 </tr>
               ))}
               {productos.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-slate-400">
+                  <td colSpan={7} className="p-4 text-center text-slate-400">
                     No se encontraron productos
                   </td>
                 </tr>
@@ -225,31 +300,78 @@ export default function TablaProductos() {
           </DialogHeader>
 
           {selectedProduct && (
-            <div className="grid gap-6 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="nombre" className="text-slate-600">Nombre del Producto</Label>
-                <Input id="nombre" defaultValue={selectedProduct.nombre} className="focus-visible:ring-blue-500" />
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label className="text-slate-600">Código de barras</Label>
+                  <Input value={modalBarcode} onChange={(e) => setModalBarcode(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-slate-600">Nombre</Label>
+                  <Input value={modalNombre} onChange={(e) => setModalNombre(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-2">
+                  <Label className="text-slate-600">Precio compra</Label>
+                  <Input type="number" value={modalCosto || ""} onChange={(e) => setModalCosto(Number(e.target.value))} />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-slate-600">Margen (%)</Label>
+                  <Input type="number" value={modalMargen || ""} onChange={(e) => setModalMargen(parseFloat(e.target.value) || 0)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-slate-600">Precio venta</Label>
+                  <Input value={modalPrecio} readOnly />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-2">
+                  <Label className="text-slate-600">Categoría</Label>
+                  <Select value={modalCategoriaId ?? ""} onValueChange={(v) => setModalCategoriaId(v)}>
+                    <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                    <SelectContent>
+                      {modalCategorias.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-slate-600">Proveedor</Label>
+                  <Select value={modalProveedorId ?? ""} onValueChange={(v) => setModalProveedorId(v)}>
+                    <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                    <SelectContent>
+                      {modalProveedores.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <input type="checkbox" checked={modalManejaLotes} onChange={(e) => setModalManejaLotes(e.target.checked)} />
+                  <Label className="text-slate-600">Maneja lotes</Label>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="precio" className="text-slate-600">Precio Venta</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-slate-400">$</span>
-                    <Input id="precio" type="number" defaultValue={selectedProduct.precio} className="pl-7" />
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="margen" className="text-slate-600">Margen (%)</Label>
-                  <Input id="margen" type="number" defaultValue={selectedProduct.margen ?? ""} />
+                  <Label className="text-slate-600">Cantidad (Stock)</Label>
+                  <Input type="number" value={modalCantidad} onChange={(e) => setModalCantidad(Number(e.target.value))} />
                 </div>
               </div>
+
+              {modalError && <p className="text-red-500 text-sm">{modalError}</p>}
             </div>
           )}
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setOpenModal(false)}>Cancelar</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">Guardar Cambios</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={guardar} disabled={modalSaving}>
+              {modalSaving ? "Guardando..." : "Guardar Cambios"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

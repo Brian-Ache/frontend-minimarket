@@ -1,5 +1,5 @@
-import type { CategoriaResponse } from "./categorias";
-import type { ProveedorResponse } from "./proveedores";
+import type { CategoriaResponse } from "./categoriaResponse";
+import type { ProveedorResponse } from "./proveedorResponse";
 
 export interface ProductoResponse {
   id: string;
@@ -11,14 +11,6 @@ export interface ProductoResponse {
   margen: number | null;
   categoria: CategoriaResponse | null;
   proveedor: ProveedorResponse | null;
-}
-
-export interface ProductoFiltros {
-  page?: number;
-  size?: number;
-  categoria?: string;
-  proveedor?: string;
-  q?: string;
 }
 
 export interface PaginatedResponse<T> {

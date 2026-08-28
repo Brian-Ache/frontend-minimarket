@@ -1,5 +1,5 @@
 type CompraItem = {
-  productoId: number;
+  productoId: string;
   cantidad: number;
   costo: number;
   margen: number;

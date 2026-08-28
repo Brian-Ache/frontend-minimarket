@@ -13,7 +13,7 @@ type Compra = {
   nroComprobante: string;
   observaciones: string;
   items: {//cada item es un producto con su cantidad, costo y margen
-    productoId: number;
+    productoId: string;
     cantidad: number;
     costo: number;
     margen: number;

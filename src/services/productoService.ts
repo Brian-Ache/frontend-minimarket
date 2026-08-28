@@ -1,7 +1,10 @@
 import api from "@/lib/api";
-import type { PaginatedResponse, ProductoFiltros, ProductoResponse } from "@/types/producto";
-import type { CategoriaResponse } from "@/types/categorias";
-import type { ProveedorResponse } from "@/types/proveedores";
+import type { PaginatedResponse, ProductoResponse } from "@/types/response/productoResponse";
+import type { CategoriaResponse } from "@/types/response/categoriaResponse";
+import type { ProveedorResponse } from "@/types/response/proveedorResponse";
+import type { ProductoFiltros } from "@/types/request/productoFiltrosRequest";
+import type { CargaProductoRequest } from "@/types/request/CargaProductoRequest";
+
 
 export async function getProductos(filtros: ProductoFiltros = {}): Promise<PaginatedResponse<ProductoResponse>> {
   const params = new URLSearchParams();
@@ -32,10 +35,44 @@ export async function searchProductos(q: string): Promise<ProductoResponse[]> {
 
 export async function getCategorias(): Promise<CategoriaResponse[]> {
   const { data } = await api.get<CategoriaResponse[]>("/api/categorias/v1");
+  console.log("estas son las categorias: ", data);
   return data;
 }
 
 export async function getProveedores(): Promise<ProveedorResponse[]> {
   const { data } = await api.get<ProveedorResponse[]>("/api/proveedores/v1");
+  return data;
+}
+
+export async function crearProducto(producto: CargaProductoRequest, idUsuario: string): Promise<ProductoResponse> {
+  const { data } = await api.post<ProductoResponse>(
+    "/api/productos/v1",
+    producto,
+    {
+      headers: { idUsuario },
+    }
+  );
+  return data;
+}
+
+//modifica caualquier campo del producto menos el stock
+export async function modificarProducto(id: string, producto: CargaProductoRequest): Promise<ProductoResponse> {
+  const { data } = await api.put<ProductoResponse>(`/api/productos/v1/${id}`, producto);
+  return data;
+}
+
+//modifica el stock de un producto cambia el valor viejo por el nuevo valor
+export async function controlarStock(idProducto: string, stockReal: number, idUsuario: string): Promise<void> {
+  await api.post("/api/inventario/v1/controlar", { idProducto, stockReal, tipo: "AJUSTE" }, { headers: { idUsuario } });
+}
+
+export interface StockResponse {
+  idProducto: string;
+  cantidad: number;
+}
+
+export async function getStockBatch(ids: string[]): Promise<StockResponse[]> {
+  if (ids.length === 0) return [];
+  const { data } = await api.post<StockResponse[]>("/api/inventario/v1/stock/batch", ids);
   return data;
 }

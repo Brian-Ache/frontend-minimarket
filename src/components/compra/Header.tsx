@@ -1,4 +1,8 @@
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {getProveedores } from "@/services/productoService";
+import type { ProveedorResponse } from "@/types/response/proveedorResponse";
 
 
 interface HeaderProps {
@@ -13,13 +17,29 @@ interface HeaderProps {
 }
 
 export default function Header({ datos, onChange }: HeaderProps) {
+
+  const [proveedores, setProveedores] = useState<ProveedorResponse[]>([]);
+
+  useEffect(() => {
+    getProveedores().then(setProveedores).catch(() => {});
+  }, []);
+
+  const  handleChange = (idProveedor: string | number | boolean) =>{
+    console.log("provedores:",proveedores);
+    console.log("id del proveedore elegido:",idProveedor);
+  }
+
+
+
   return (
     <div className="grid grid-cols-5 gap-2">
-      <Input 
-        placeholder="Proveedor" 
-        value={datos.proveedor}
-        onChange={(e) => onChange("proveedor", e.target.value)}
-      />
+      <Select value={""}
+          onValueChange={(v) => handleChange(v)}>
+          <SelectTrigger><SelectValue placeholder="Selec Proveedor" /></SelectTrigger>
+          <SelectContent>
+            {proveedores.map(p => <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>)}
+          </SelectContent>
+        </Select>
       <Input type="date" value={datos.fecha} onChange={(e) => onChange("fecha", e.target.value)}/>
       
       {/* desplegar dos opciones remito o factura con selec que despliegan*/}

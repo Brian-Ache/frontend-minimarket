@@ -12,18 +12,24 @@
  * inmediatamente, espera 500ms a ver si sigue escribiendo. Si en esos 500ms el usuario
  * escribio otra letra, se cancela la anterior y se reinicia el contador. Asi solo se hace
  * la peticion cuando el usuario deja de escribir, evitando saturar al backend.
+ *
+ * Parametro refreshKey:
+ * Es un numero que incrementa cuando se crea, modifica o elimina un producto.
+ * Está en las dependencias del fetch, asi que cada vez que cambia, se re-ejecuta
+ * la carga de productos. Esto permite que la tabla se actualice al instante
+ * después de una operación de escritura, sin necesidad de recargar la página.
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getProductos, getCategorias, getProveedores } from "@/services/productoService";
-import type { ProductoResponse } from "@/types/producto";
-import type { CategoriaResponse } from "@/types/categorias";
-import type { ProveedorResponse } from "@/types/proveedores";
+import type { ProductoResponse } from "@/types/response/productoResponse";
+import type { CategoriaResponse } from "@/types/response/categoriaResponse";
+import type { ProveedorResponse } from "@/types/response/proveedorResponse";
 
 const DEBOUNCE_MS = 500;
 const DEFAULT_PAGE_SIZE = 20;
 
-export function useProductos() {
+export function useProductos(refreshKey = 0) {
   const [productos, setProductos] = useState<ProductoResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +71,7 @@ export function useProductos() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, pageSize, categoriaId, proveedorId, search]);
+  }, [currentPage, pageSize, categoriaId, proveedorId, search, refreshKey]);
 
   // Cargar categorias y proveedores al montar
   useEffect(() => {

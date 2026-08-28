@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import api from "@/lib/api";
-import type { User, LoginResponse } from "@/types/auth";
+import type { User, LoginResponse } from "@/types/response/loginResponse";
 
 //El Contexto (AuthContext): Define qué datos y funciones estarán disponibles globalmente (por ejemplo: los datos del usuario, si está autenticado o no, funciones de login y logout).
 interface AuthContextType {

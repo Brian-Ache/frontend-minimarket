@@ -1,109 +1,93 @@
+/**
+ * FormProducto — Formulario de carga de productos.
+ *
+ * Recibe un callback `onCreated` que se ejecuta después de crear un producto
+ * exitosamente. Su propósito es avisar al componente padre (ProductoPage)
+ * que hay un producto nuevo, para que este dispare el refresh de la tabla.
+ * Se usa optional chaining (onCreated?.()) porque el callback es opcional,
+ * permitiendo que el formulario se use también sin tabla (caso standalone).
+ */
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {useState, useEffect} from "react"; 
+import { useState, useEffect } from "react";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import useCargarProducto from "@/hooks/useCargarProducto";
+import { getCategorias, getProveedores } from "@/services/productoService";
+import type { CategoriaResponse } from "@/types/response/categoriaResponse";
+import type { ProveedorResponse } from "@/types/response/proveedorResponse";
 
-export default function FormProducto() {
+export default function FormProducto({ onCreated }: { onCreated?: () => void }) {
+  const { form, handleChange, cargar, loading, error, reset } = useCargarProducto();
+  const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
+  const [proveedores, setProveedores] = useState<ProveedorResponse[]>([]);
 
-  const [codigo, setCodigo] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [precioCompra, setPrecioCompra] = useState(0);
-  const [margen, setMargen] = useState(0);
-  const [precioVenta, setPrecioVenta] = useState(0);
-  const [categoriaSelect, setCategoriaSelect] = useState("");
-  const [proveedorSelect, setProveedorSelect] = useState("");
- 
   useEffect(() => {
-    const nuevoPrecioVenta = precioCompra + (precioCompra * margen / 100);
-    const precioRedondeado = Math.ceil(nuevoPrecioVenta / 50) * 50;
-    setPrecioVenta(precioRedondeado);
-  }, [precioCompra, margen]);
+    getCategorias().then(setCategorias).catch(() => {});
+    getProveedores().then(setProveedores).catch(() => {});
+  }, []);
 
-  const limpiarFormulario = () => {
-    setCodigo("");
-    setNombre("");
-    setPrecioCompra(0);
-    setMargen(0);
-    setPrecioVenta(0);
-    setCategoriaSelect("");
-    setProveedorSelect("");
+  const handleGuardar = async () => {
+    try {
+      const result = await cargar();
+      console.log("Producto creado:", result);
+      alert("Producto creado exitosamente");
+      onCreated?.();
+    } catch {
+      // error ya está en el hook
+    }
   };
-  
-  return (
-    <div className="grid grid-cols-6 gap-2">
 
-      <Input className="col-span-1" placeholder="Código de barras" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
-      <Input className="col-span-1" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-      <Input className="col-span-1" placeholder="Precio compra" type="number" value={precioCompra || ""} onChange={(e) => setPrecioCompra(Number(e.target.value))} />
-      <Input className="col-span-1" placeholder="Margen" type="number"
-        value={margen || ""}
-        onChange={(e) => setMargen(parseFloat(e.target.value) || 0)}
-      />
-      <Input className="col-span-1" placeholder="Precio venta" value={precioVenta || ""} readOnly />
-      <div className="col-span-1" />
+  return (
+    <div className="grid grid-cols-5 gap-2">
+      <Input className="col-span-1" placeholder="Código de barras" value={form.barcode}
+        onChange={(e) => handleChange("barcode", e.target.value)} />
+      <Input className="col-span-1" placeholder="Nombre" value={form.nombre}
+        onChange={(e) => handleChange("nombre", e.target.value)} />
+      <Input className="col-span-1" placeholder="Precio compra" type="number" value={form.costo || ""}
+        onChange={(e) => handleChange("costo", Number(e.target.value))} />
+      <Input className="col-span-1" placeholder="Margen" type="number" value={form.margen || ""}
+        onChange={(e) => handleChange("margen", parseFloat(e.target.value) || 0)} />
+      <Input className="col-span-1" placeholder="Precio venta" value={form.precio || ""} readOnly />
 
       <div className="col-span-1 grid gap-2">
-        <Label htmlFor="categoria" className="text-slate-600">Categoría</Label>
-        <Select
-          value={categoriaSelect}
-          onValueChange={(value) => setCategoriaSelect(value)}
-        >
-          <SelectTrigger id="categoria">
-            <SelectValue placeholder="Seleccionar..." />
-          </SelectTrigger>
+        <Label className="text-slate-600">Categoría</Label>
+        <Select value={form.idCategoria ?? ""}
+          onValueChange={(v) => handleChange("idCategoria", v)}>
+          <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="Bebidas">Bebidas</SelectItem>
-            <SelectItem value="Alimentos">Alimentos</SelectItem>
-            <SelectItem value="Limpieza">Limpieza</SelectItem>
-            <SelectItem value="Congelados">Congelados</SelectItem>
-            <SelectItem value="Lácteos y Frescos">Lácteos y Frescos</SelectItem>
-            <SelectItem value="Cigarrillos">Cigarrillos</SelectItem>
-            <SelectItem value="Kiosco">Kiosco</SelectItem>
-            <SelectItem value="Mascotas">Mascotas</SelectItem>
+            {categorias.map(c => <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
       <div className="col-span-2 grid gap-2">
-        <Label htmlFor="proveedor" className="text-slate-600">Proveedor</Label>
-        <Select
-          value={proveedorSelect}
-          onValueChange={(value) => setProveedorSelect(value)}
-        >
-          <SelectTrigger id="proveedor">
-            <SelectValue placeholder="Seleccionar..." />
-          </SelectTrigger>
+        <Label className="text-slate-600">Proveedor</Label>
+        <Select value={form.idProveedor ?? ""}
+          onValueChange={(v) => handleChange("idProveedor", v)}>
+          <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="Coca">Coca Cola</SelectItem>
-            <SelectItem value="Pepsi">Pepsi</SelectItem>
-            <SelectItem value="Local">Distribuidora Local</SelectItem>
-            <SelectItem value="Cervecería y Maltería Quilmes">Cervecería y Maltería Quilmes</SelectItem>
-            <SelectItem value="Aguas Danone">Aguas Danone</SelectItem>
-            <SelectItem value="Unilever Argentina">Unilever Argentina</SelectItem>
-            <SelectItem value="Arcor">Arcor</SelectItem>
-            <SelectItem value="Paladini">Paladini</SelectItem>
-            <SelectItem value="Bimbo Argentina">Bimbo Argentina</SelectItem>
-            <SelectItem value="Bagley">Bagley</SelectItem>
-            <SelectItem value="Molinos Río de la Plata">Molinos Río de la Plata</SelectItem>
-            <SelectItem value="Mondelēz International">Mondelēz International</SelectItem>
-            <SelectItem value="Fratelli Branca">Fratelli Branca</SelectItem>
-            <SelectItem value="Mastellone Hermanos">Mastellone Hermanos</SelectItem>
+            {proveedores.map(p => <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
-      
-      <div className="col-span-1" />
 
-      <div className="col-span-1 flex items-end justify-between gap-2">
-        <Button className="bg-emerald-600 text-white">
-          Guardar
-        </Button>
-        <Button variant="secondary" onClick={limpiarFormulario}>
-          Limpiar
-        </Button>
+      <div className="col-span-1 flex items-center">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={form.manejaLotes}
+            onChange={(e) => handleChange("manejaLotes", e.target.checked)} />
+          <span className="text-sm text-slate-600">Maneja lotes</span>
+        </label>
       </div>
 
+      <div className="col-span-1 flex items-end justify-between gap-2">
+        <Button className="bg-emerald-600 text-white" onClick={handleGuardar} disabled={loading}>
+          {loading ? "Guardando..." : "Guardar"}
+        </Button>
+        <Button variant="secondary" onClick={reset}>Limpiar</Button>
+      </div>
+
+      {error && <p className="col-span-6 text-red-500 text-sm">{error}</p>}
     </div>
   );
 }
