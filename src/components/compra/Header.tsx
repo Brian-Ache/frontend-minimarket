@@ -24,17 +24,14 @@ export default function Header({ datos, onChange }: HeaderProps) {
     getProveedores().then(setProveedores).catch(() => {});
   }, []);
 
-  const  handleChange = (idProveedor: string | number | boolean) =>{
-    console.log("provedores:",proveedores);
-    console.log("id del proveedore elegido:",idProveedor);
-  }
+
 
 
 
   return (
     <div className="grid grid-cols-5 gap-2">
-      <Select value={""}
-          onValueChange={(v) => handleChange(v)}>
+      <Select value={datos.proveedor}
+          onValueChange={(v) => onChange("proveedor", v)}>
           <SelectTrigger><SelectValue placeholder="Selec Proveedor" /></SelectTrigger>
           <SelectContent>
             {proveedores.map(p => <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>)}

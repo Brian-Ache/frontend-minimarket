@@ -7,7 +7,7 @@ import { useState } from "react";
 
 //ACA TENGO EL OBJETO COMPRA QUE SE VA A IR ACTUALIZANDO CON LOS DATOS DE LOS COMPONENTES HIJOS, Y AL FINAL SE VA A ENVIAR AL BACKEND PARA GUARDAR LA COMPRA
 type Compra = {
-  proveedor: string;//nombre del proveedor
+  proveedor: string;//id del proveedor (UUID)
   fecha: string;
   tipoComprobante: string;
   nroComprobante: string;
