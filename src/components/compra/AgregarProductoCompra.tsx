@@ -115,6 +115,7 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
     if (form.costo <= 0 || form.cantidad <= 0) return;
 
     onAgregar(form);
+    console.log("el prodcucto que se agrego fue:",form);
 
     setForm({
       productoId: "",

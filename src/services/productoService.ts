@@ -35,7 +35,6 @@ export async function searchProductos(q: string): Promise<ProductoResponse[]> {
 
 export async function getCategorias(): Promise<CategoriaResponse[]> {
   const { data } = await api.get<CategoriaResponse[]>("/api/categorias/v1");
-  console.log("estas son las categorias: ", data);
   return data;
 }
 
@@ -59,6 +58,11 @@ export async function crearProducto(producto: CargaProductoRequest, idUsuario: s
 export async function modificarProducto(id: string, producto: CargaProductoRequest): Promise<ProductoResponse> {
   const { data } = await api.put<ProductoResponse>(`/api/productos/v1/${id}`, producto);
   return data;
+}
+
+//elimina un producto por su id (soft delete)
+export async function eliminarProducto(id: string): Promise<void> {
+  await api.delete(`/api/productos/v1/${id}`);
 }
 
 //modifica el stock de un producto cambia el valor viejo por el nuevo valor

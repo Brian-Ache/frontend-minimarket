@@ -4,6 +4,8 @@ import ItemsTable from "./ItemsTable";
 import CompraFooter from "./Footer";
 import { useEffect } from "react";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { crearCompra } from "@/services/compraService";
 
 //ACA TENGO EL OBJETO COMPRA QUE SE VA A IR ACTUALIZANDO CON LOS DATOS DE LOS COMPONENTES HIJOS, Y AL FINAL SE VA A ENVIAR AL BACKEND PARA GUARDAR LA COMPRA
 type Compra = {
@@ -14,15 +16,20 @@ type Compra = {
   observaciones: string;
   items: {//cada item es un producto con su cantidad, costo y margen
     productoId: string;
+    nombre: string;
     cantidad: number;
     costo: number;
     margen: number;
+    precioVenta: number;
   }[];
   total: number;//total de la compra, calculado a partir de los items
 }; 
 
 
 export default function NuevaCompra(){
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   //cargo la variable d con la fecha actual que obtengo de new Date(), y la formateo a yyyy-mm-dd para usarla como valor por defecto en el input de tipo date del header
   const d = new Date();
@@ -48,6 +55,7 @@ export default function NuevaCompra(){
     );
     setCompra(prev => ({ ...prev, total: nuevoTotal }));
     console.log("Los items de la compra son: ", compra.items);
+    console.log("El valor de la compra es de: ", nuevoTotal); 
   }, [compra.items]);
 
   // Función para agregar o actualizar productos desde el buscador/tabla
@@ -56,20 +64,49 @@ export default function NuevaCompra(){
   };
 
   //cuando se ejecuta la funcion se deberia resetear el estado de compra a su valor inicial para limpiar el formulario.
+  //El backend aumenta automaticamente el stock del producto
   const handleSendToBackend = async () => {
-    console.log("Enviando compra:", compra);
+    if (compra.items.length === 0) {
+      setError("No hay productos en la compra");
+      return;
+    }
+    if (!user) {
+      setError("No hay usuario autenticado");
+      return;
+    }
 
-    //receteo la compra a su estado inicial para limpiar el formulario, pero antes de eso se podria mostrar un mensaje de confirmacion o algo asi para que el usuario sepa que la compra se guardo correctamente, y no se borre todo sin aviso.
-    setCompra({
-      proveedor: "",
-      fecha: fechaLocal,
-      tipoComprobante: "",
-      nroComprobante: "",
-      observaciones: "",
-      items: [],
-      total: 0,
-    });
-    // Aquí iría tu fetch/axios
+    setLoading(true);
+    setError(null);
+    try {
+      await crearCompra(user.id, {
+        detalle: compra.items.map(item => ({
+          idProducto: item.productoId,
+          precioUnitario: item.costo,
+          cantidad: item.cantidad,
+          margen: item.margen,
+          precioVenta: item.precioVenta,
+        })),
+        idProveedor: compra.proveedor || null,
+        tipoComprobante: compra.tipoComprobante || null,
+        nroComprobante: compra.nroComprobante || null,
+        observaciones: compra.observaciones || null,
+      });
+
+      alert("Compra registrada exitosamente");
+      setCompra({
+        proveedor: "",
+        fecha: fechaLocal,
+        tipoComprobante: "",
+        nroComprobante: "",
+        observaciones: "",
+        items: [],
+        total: 0,
+      });
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Error al registrar la compra");
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -108,7 +145,9 @@ export default function NuevaCompra(){
         <CompraFooter
           total={compra.total} 
           onSave={handleSendToBackend}
+          loading={loading}
         />
+        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
       </div>
 
     </div>

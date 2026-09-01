@@ -1,8 +1,10 @@
 type CompraItem = {
   productoId: string;
+  nombre: string;
   cantidad: number;
   costo: number;
   margen: number;
+  precioVenta: number;
 };
 
 interface ItemsTableProps {
@@ -40,7 +42,7 @@ export default function ItemsTable({ items, /*setItems*/ }: ItemsTableProps) {
           ) : (
             items.map((item, i) => (
               <tr key={`${item.productoId}-${i}`} className="border-t border-border hover:bg-slate-50">
-                <td className="p-2">{item.productoId}</td>
+                <td className="p-2">{item.nombre}</td>
                 <td className="p-2 text-right">{item.cantidad}</td>
                 <td className="p-2 text-right">${item.costo}</td>
                 <td className="p-2 text-right">{item.margen}%</td>

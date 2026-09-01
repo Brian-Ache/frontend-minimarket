@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 import {
   Select,
@@ -87,9 +88,10 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
     modalProveedorId, setModalProveedorId,
     modalCantidad, setModalCantidad,
     modalCategorias, modalProveedores,
-    modalSaving, modalError,
+    modalSaving, modalDeleting, modalError,
     guardar,
-  } = useModificarProducto({ producto: selectedProduct, stockInicial, onRefresh });
+    eliminar,
+  } = useModificarProducto({ producto: selectedProduct, stockInicial, onRefresh, onClose: () => setOpenModal(false) });
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -368,8 +370,11 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
           )}
 
           <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="destructive" onClick={eliminar} disabled={modalSaving || modalDeleting}>
+              <Trash2 className="w-4 h-4 mr-1" /> {modalDeleting ? "Eliminando..." : "Eliminar"}
+            </Button>
             <Button variant="outline" onClick={() => setOpenModal(false)}>Cancelar</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={guardar} disabled={modalSaving}>
+            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={guardar} disabled={modalSaving || modalDeleting}>
               {modalSaving ? "Guardando..." : "Guardar Cambios"}
             </Button>
           </DialogFooter>

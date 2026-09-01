@@ -25,7 +25,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { modificarProducto, controlarStock } from "@/services/productoService";
+import { modificarProducto, controlarStock, eliminarProducto } from "@/services/productoService";
 import { getCategorias, getProveedores } from "@/services/productoService";
 import type { ProductoResponse } from "@/types/response/productoResponse";
 import type { CargaProductoRequest } from "@/types/request/CargaProductoRequest";
@@ -36,9 +36,10 @@ interface UseModificarProductoProps {
   producto: ProductoResponse | null;
   stockInicial: number;
   onRefresh?: () => void;
+  onClose?: () => void;
 }
 
-export default function useModificarProducto({ producto, stockInicial, onRefresh }: UseModificarProductoProps) {
+export default function useModificarProducto({ producto, stockInicial, onRefresh, onClose }: UseModificarProductoProps) {
 
   // Extrae los datos del usuario actualmente logueado en la aplicación.
   const { user } = useAuth();
@@ -51,6 +52,7 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
   const [modalProveedorId, setModalProveedorId] = useState<string | null>(null);
   const [modalCantidad, setModalCantidad] = useState(0);
   const [modalSaving, setModalSaving] = useState(false);
+  const [modalDeleting, setModalDeleting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
   const [modalCategorias, setModalCategorias] = useState<CategoriaResponse[]>([]);
@@ -118,6 +120,23 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
     }
   };
 
+  //eliminar() llama a eliminarProducto() (DELETE /api/productos/v1/{id}) y cierra el modal
+  const eliminar = async () => {
+    if (!producto) return;
+    if (!window.confirm("¿Estás seguro de eliminar este producto?")) return;
+    setModalDeleting(true);
+    setModalError(null);
+    try {
+      await eliminarProducto(producto.id);
+      onRefresh?.();
+      onClose?.();
+    } catch (err: any) {
+      setModalError(err.response?.data?.message || "Error al eliminar producto");
+    } finally {
+      setModalDeleting(false);
+    }
+  };
+
   return {
     modalBarcode, setModalBarcode,
     modalNombre, setModalNombre,
@@ -129,8 +148,9 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
     modalProveedorId, setModalProveedorId,
     modalCantidad, setModalCantidad,
     modalCategorias, modalProveedores,
-    modalSaving, modalError,
+    modalSaving, modalDeleting, modalError,
     handleChange,
     guardar,
+    eliminar,
   };
 }

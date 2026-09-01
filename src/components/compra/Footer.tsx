@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 type CompraFooterProps = {
   total: number;
   onSave: () => Promise<void>;
+  loading?: boolean;
 };
 
-export default function CompraFooter({ total, onSave }: CompraFooterProps) {
+export default function CompraFooter({ total, onSave, loading }: CompraFooterProps) {
   return (
     <div className="flex justify-between items-center">
 
@@ -18,8 +19,8 @@ export default function CompraFooter({ total, onSave }: CompraFooterProps) {
           Cancelar
         </Button>
 
-        <Button  className="bg-emerald-600 hover:bg-emerald-700" onClick={onSave}>
-          Guardar Compra
+        <Button  className="bg-emerald-600 hover:bg-emerald-700" onClick={onSave} disabled={loading}>
+          {loading ? "Guardando..." : "Guardar Compra"}
         </Button>
       </div>
 
