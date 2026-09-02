@@ -1,3 +1,5 @@
+import { Trash2 } from "lucide-react";
+
 type CompraItem = {
   productoId: string;
   nombre: string;
@@ -12,10 +14,8 @@ interface ItemsTableProps {
   setItems: (nuevosItems: CompraItem[]) => void;
 }
 
-//NAVIGACION POR TECLADO EN LA TABLA DE TICKETS
 
-
-export default function ItemsTable({ items, /*setItems*/ }: ItemsTableProps) {
+export default function ItemsTable({ items, setItems }: ItemsTableProps) {
   return (
     <div className="h-full border border-border rounded-md overflow-auto">
 
@@ -29,13 +29,14 @@ export default function ItemsTable({ items, /*setItems*/ }: ItemsTableProps) {
             <th className="p-2 text-right">Margen</th>
             <th className="p-2 text-right">Precio Venta</th>
             <th className="p-2 text-right">Subtotal</th>
+            <th className="p-2 text-center">Acción</th>
           </tr>
         </thead>
 
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={6} className="p-4 text-center text-sm text-slate-500">
+              <td colSpan={7} className="p-4 text-center text-sm text-slate-500">
                 No hay productos agregados.
               </td>
             </tr>
@@ -50,6 +51,14 @@ export default function ItemsTable({ items, /*setItems*/ }: ItemsTableProps) {
                   ${Math.round(item.costo * (1 + item.margen / 100))}
                 </td>
                 <td className="p-2 text-right">${item.cantidad * item.costo}</td>
+                <td className="p-2 text-center">
+                  <button
+                    onClick={() => setItems(items.filter((_, j) => j !== i))}
+                    className="hover:bg-red-50 rounded p-1"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </td>
               </tr>
             ))
           )}

@@ -112,7 +112,7 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
   };
 
   const handleAgregar = () => {
-    if (form.costo <= 0 || form.cantidad <= 0) return;
+    if (!form.productoId || form.costo <= 0 || form.cantidad <= 0) return;
 
     onAgregar(form);
     console.log("el prodcucto que se agrego fue:",form);
@@ -215,8 +215,9 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
 
       <div className="md:col-span-1">
         <Button 
-          onClick={handleAgregar}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={handleAgregar}
+            disabled={!form.productoId || form.costo <= 0 || form.cantidad <= 0}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
         >
           <Plus className="w-4 h-4 mr-1" /> Añadir
         </Button>

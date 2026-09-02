@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Tabs,
   TabsContent,
@@ -9,6 +10,8 @@ import NuevaCompra from "./NuevaCompra";
 import HistorialCompras from "./HistorialCompras";
 
 export default function CompraPage() {
+  const [refreshKey, setRefreshKey] = useState(0);
+
   return (
     <div className="w-full h-full p-3 overflow-hidden">
 
@@ -30,14 +33,14 @@ export default function CompraPage() {
           value="nueva"
           className="flex-1 min-h-0 mt-3"
         >
-          <NuevaCompra />
+          <NuevaCompra onCompraCreada={() => setRefreshKey((k) => k + 1)} />
         </TabsContent>
 
         <TabsContent
           value="historial"
           className="flex-1 min-h-0 mt-3"
         >
-          <HistorialCompras />
+          <HistorialCompras refreshKey={refreshKey} />
         </TabsContent>
 
       </Tabs>

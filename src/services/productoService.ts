@@ -1,5 +1,6 @@
 import api from "@/lib/api";
-import type { PaginatedResponse, ProductoResponse } from "@/types/response/productoResponse";
+import type { PaginatedResponse } from "@/types/response/paginatedResponse";
+import type { ProductoResponse } from "@/types/response/productoResponse";
 import type { CategoriaResponse } from "@/types/response/categoriaResponse";
 import type { ProveedorResponse } from "@/types/response/proveedorResponse";
 import type { ProductoFiltros } from "@/types/request/productoFiltrosRequest";

@@ -37,7 +37,8 @@ export default function Header({ datos, onChange }: HeaderProps) {
             {proveedores.map(p => <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>)}
           </SelectContent>
         </Select>
-      <Input type="date" value={datos.fecha} onChange={(e) => onChange("fecha", e.target.value)}/>
+      {/*<Input type="date" value={datos.fecha} onChange={(e) => onChange("fecha", e.target.value)}/>*/}
+      <Input type="date" value={datos.fecha} disabled className="bg-slate-50 text-slate-500" />
       
       {/* desplegar dos opciones remito o factura con selec que despliegan*/}
       <select className="w-full px-3 py-2 border border-border rounded-md" value={datos.tipoComprobante} onChange={(e) => onChange("tipoComprobante", e.target.value)}>

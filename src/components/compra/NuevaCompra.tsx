@@ -26,7 +26,11 @@ type Compra = {
 }; 
 
 
-export default function NuevaCompra(){
+interface NuevaCompraProps {
+  onCompraCreada?: () => void;
+}
+
+export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +58,8 @@ export default function NuevaCompra(){
       0
     );
     setCompra(prev => ({ ...prev, total: nuevoTotal }));
-    console.log("Los items de la compra son: ", compra.items);
-    console.log("El valor de la compra es de: ", nuevoTotal); 
+    //console.log("Los items de la compra son: ", compra.items);
+    //console.log("El valor de la compra es de: ", nuevoTotal); 
   }, [compra.items]);
 
   // Función para agregar o actualizar productos desde el buscador/tabla
@@ -93,6 +97,7 @@ export default function NuevaCompra(){
       });
 
       alert("Compra registrada exitosamente");
+      onCompraCreada?.();
       setCompra({
         proveedor: "",
         fecha: fechaLocal,

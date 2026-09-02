@@ -12,11 +12,3 @@ export interface ProductoResponse {
   categoria: CategoriaResponse | null;
   proveedor: ProveedorResponse | null;
 }
-
-export interface PaginatedResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-}
