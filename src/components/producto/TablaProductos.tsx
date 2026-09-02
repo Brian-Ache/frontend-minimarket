@@ -18,7 +18,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil, Check, X } from "lucide-react";
 
 import {
   Select,
@@ -68,6 +68,16 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [openModal, setOpenModal] = useState(false);
+
+  // Historial de proveedores
+  const [openHistorial, setOpenHistorial] = useState(false);
+  const [historial, setHistorial] = useState([
+    { id: "1", proveedor: "Hergo", fecha: "02/09/2026", precioEntrada: 1900, precioReferencia: 2050 },
+    { id: "2", proveedor: "Wally", fecha: "15/08/2026", precioEntrada: 1750, precioReferencia: 1900 },
+    { id: "3", proveedor: "Across", fecha: "10/07/2026", precioEntrada: 1680, precioReferencia: 1850 },
+  ]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
 
   // Stock de los productos de la página actual
   const [stockMap, setStockMap] = useState<Map<string, number>>(new Map());
@@ -293,7 +303,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
 
       {/* Modal para modificar producto */}
       <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[650px]">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Modificar Producto</DialogTitle>
             <DialogDescription>
@@ -302,84 +312,209 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
           </DialogHeader>
 
           {selectedProduct && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label className="text-slate-600">Código de barras</Label>
-                  <Input value={modalBarcode} onChange={(e) => setModalBarcode(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-slate-600">Nombre</Label>
-                  <Input value={modalNombre} onChange={(e) => setModalNombre(e.target.value)} />
-                </div>
+            <div className="grid grid-cols-6 gap-4 py-4 items-start">
+              <div className="col-span-3 grid gap-2">
+                <Label className="text-slate-600">Código de barras</Label>
+                <Input value={modalBarcode} onChange={(e) => setModalBarcode(e.target.value)} />
+              </div>
+              <div className="col-span-3 grid gap-2">
+                <Label className="text-slate-600">Nombre</Label>
+                <Input value={modalNombre} onChange={(e) => setModalNombre(e.target.value)} />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label className="text-slate-600">Precio compra</Label>
-                  <Input type="number" value={modalCosto || ""} onChange={(e) => setModalCosto(Number(e.target.value))} />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-slate-600">Margen (%)</Label>
-                  <Input type="number" value={modalMargen || ""} onChange={(e) => setModalMargen(parseFloat(e.target.value) || 0)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-slate-600">Precio venta</Label>
-                  <Input value={modalPrecio} readOnly />
-                </div>
+              <div className="col-span-2 grid gap-2">
+                <Label className="text-slate-600">Precio compra</Label>
+                <Input type="number" value={modalCosto || ""} onChange={(e) => setModalCosto(Number(e.target.value))} />
+              </div>
+              <div className="col-span-2 grid gap-2">
+                <Label className="text-slate-600">Margen (%)</Label>
+                <Input type="number" value={modalMargen || ""} onChange={(e) => setModalMargen(parseFloat(e.target.value) || 0)} />
+              </div>
+              <div className="col-span-2 grid gap-2">
+                <Label className="text-slate-600">Precio venta</Label>
+                <Input value={modalPrecio} readOnly />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label className="text-slate-600">Categoría</Label>
-                  <Select value={modalCategoriaId ?? ""} onValueChange={(v) => setModalCategoriaId(v)}>
-                    <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                    <SelectContent>
-                      {modalCategorias.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label className="text-slate-600">Proveedor</Label>
-                  <Select value={modalProveedorId ?? ""} onValueChange={(v) => setModalProveedorId(v)}>
-                    <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                    <SelectContent>
-                      {modalProveedores.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2 pt-6">
-                  <input type="checkbox" checked={modalManejaLotes} onChange={(e) => setModalManejaLotes(e.target.checked)} />
-                  <Label className="text-slate-600">Maneja lotes</Label>
-                </div>
+              <div className="col-span-2 grid gap-2">
+                <Label className="text-slate-600">Categoría</Label>
+                <Select value={modalCategoriaId ?? ""} onValueChange={(v) => setModalCategoriaId(v)}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                  <SelectContent>
+                    {modalCategorias.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-4 grid gap-2">
+                <Label className="text-slate-600">Proveedor</Label>
+                <Select value={modalProveedorId ?? ""} onValueChange={(v) => setModalProveedorId(v)}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+                  <SelectContent>
+                    {modalProveedores.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 justify-start text-slate-500 hover:text-slate-700"
+                  onClick={() => setOpenHistorial(true)}
+                >
+                  ↻ Ver historial de proveedores
+                </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label className="text-slate-600">Cantidad (Stock)</Label>
-                  <Input type="number" value={modalCantidad} onChange={(e) => setModalCantidad(Number(e.target.value))} />
-                </div>
+              <div className="col-span-2 grid gap-2">
+                <Label className="text-slate-600">Cantidad (Stock)</Label>
+                <Input type="number" value={modalCantidad} onChange={(e) => setModalCantidad(Number(e.target.value))} />
+              </div>
+              <div className="col-span-1 flex items-center gap-2 pt-6">
+                <input type="checkbox" checked={modalManejaLotes} onChange={(e) => setModalManejaLotes(e.target.checked)} />
+                <Label className="text-slate-600">Maneja lotes</Label>
               </div>
 
-              {modalError && <p className="text-red-500 text-sm">{modalError}</p>}
+              {modalError && <p className="col-span-6 text-red-500 text-sm">{modalError}</p>}
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="destructive" onClick={eliminar} disabled={modalSaving || modalDeleting}>
-              <Trash2 className="w-4 h-4 mr-1" /> {modalDeleting ? "Eliminando..." : "Eliminar"}
+          <DialogFooter className="px-6 flex flex-row justify-between sm:justify-between items-center w-full">
+            <Button
+              variant="destructive"
+              onClick={eliminar}
+              disabled={modalSaving || modalDeleting}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              {modalDeleting ? "Eliminando..." : "Eliminar"}
             </Button>
-            <Button variant="outline" onClick={() => setOpenModal(false)}>Cancelar</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={guardar} disabled={modalSaving || modalDeleting}>
-              {modalSaving ? "Guardando..." : "Guardar Cambios"}
-            </Button>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setOpenModal(false)}
+              >
+                Cancelar
+              </Button>
+
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={guardar}
+                disabled={modalSaving || modalDeleting}
+              >
+                {modalSaving ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de historial de proveedores */}
+      {selectedProduct && (
+        <Dialog open={openHistorial} onOpenChange={setOpenHistorial}>
+          <DialogContent className="sm:max-w-[650px]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">Historial de proveedores</DialogTitle>
+              <DialogDescription>
+                Producto: {selectedProduct.nombre}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="max-h-[400px] overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-200 sticky top-0">
+                  <tr>
+                    <th className="p-2 text-left">Proveedor</th>
+                    <th className="p-2 text-left">Fecha Ingreso</th>
+                    <th className="p-2 text-right">Precio Ingreso</th>
+                    <th className="p-2 text-right">Precio referencia</th>
+                    <th className="p-2 w-16"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historial.map((h) => (
+                    <tr key={h.id} className="border-t border-border">
+                      <td className="p-2">{h.proveedor}</td>
+                      <td className="p-2">{h.fecha}</td>
+                      <td className="p-2 text-right">${h.precioEntrada.toLocaleString("es-AR")}</td>
+                      <td className="p-2 text-right">
+                        {editingId === h.id ? (
+                          <Input
+                            type="number"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            className="h-7 w-24 text-right inline"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                setHistorial((prev) =>
+                                  prev.map((item) =>
+                                    item.id === h.id
+                                      ? { ...item, precioReferencia: Number(editingValue) }
+                                      : item
+                                  )
+                                );
+                                setEditingId(null);
+                              }
+                              if (e.key === "Escape") setEditingId(null);
+                            }}
+                          />
+                        ) : (
+                          <span>${h.precioReferencia.toLocaleString("es-AR")}</span>
+                        )}
+                      </td>
+                      <td className="p-2 text-right">
+                        {editingId === h.id ? (
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => {
+                                setHistorial((prev) =>
+                                  prev.map((item) =>
+                                    item.id === h.id
+                                      ? { ...item, precioReferencia: Number(editingValue) }
+                                      : item
+                                  )
+                                );
+                                setEditingId(null);
+                              }}
+                            >
+                              <Check className="w-3 h-3 text-emerald-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => setEditingId(null)}
+                            >
+                              <X className="w-3 h-3 text-slate-500" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => {
+                              setEditingId(h.id);
+                              setEditingValue(String(h.precioReferencia));
+                            }}
+                          >
+                            <Pencil className="w-3 h-3 text-slate-400" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpenHistorial(false)}>Cerrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </div>
   );
