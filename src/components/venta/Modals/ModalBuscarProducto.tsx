@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+// [SQLite] Importar servicio de productos local
+import { getProductos } from "@/services/venta/sqliteService";
 
 import {
   Dialog,
@@ -19,7 +21,7 @@ interface ModalBuscarProductoProps {
 }
 
 interface Producto {
-  id: number;
+  id: number | string;
   barcode: string;
   nombre: string;
   precio: number;
@@ -34,14 +36,18 @@ export default function ModalBuscarProducto({
 
   const [busqueda, setBusqueda] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  // [SQLite] Estado para productos cargados desde SQLite
+  const [productos, setProductos] = useState<any[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const rowsRef = useRef<(HTMLTableRowElement | null)[]>([]);
 
-  // Carga de productos
-  const productos = localStorage.getItem("pos_productos") 
-    ? JSON.parse(localStorage.getItem("pos_productos")!) 
-    : [];
+  // [SQLite] Cargar productos de SQLite cuando se abre el modal
+  useEffect(() => {
+    if (open) {
+      getProductos().then(setProductos).catch(() => setProductos([]));
+    }
+  }, [open]);
 
   ////////////////////////////////////////////////////////////////////////////////
   //FILTRO DE BUSQUEDA POR NOMBRE DE PRODUCTO

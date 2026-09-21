@@ -31,10 +31,10 @@ interface ShortcutParams {
   tickets: any[];
   activeTicket: number;
   productosDelTicket: any[];
-  productoSeleccionadoId: number | null;
-  onSeleccionarProducto: (id: number | null) => void;
+  productoSeleccionadoId: number | string | null;
+  onSeleccionarProducto: (id: number | string | null) => void;
   onFocusBarcode: () => void;
-  eliminarProducto: (id: number) => void;
+  eliminarProducto: (id: number | string) => void;
   eliminarTicket: (id: number) => void;
   isModalOpen: boolean;
   

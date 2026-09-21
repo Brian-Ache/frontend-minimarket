@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import ModalNavegarTickets from "../Modals/ModalNavegarTickets";
 import ModalAgregarTicket from "../Modals/ModalAgregarTicket";
+import ModalVentasDia from "../Modals/ModalVentasDia";
 
 type Producto = {
-  id: number;
+  id: number | string;
   nombre: string;
   precio: number;
   cantidad: number;
@@ -33,7 +34,13 @@ type Props = {
   //Padre controla el modal (venta page)
   openModalAgregarTicket: boolean;
   setOpenModalAgregarTicket: (isopen:boolean) => void;
-  
+
+  // [SQLite] Función de cobro conectada a la cola de tickets
+  onCobrar: () => void;
+
+  //openModalVentasDia
+  openModalVentasDia: boolean;
+  setOpenModalVentasDia: (isopen:boolean) => void;
 };
 
 export default function FooterVenta({ 
@@ -49,6 +56,10 @@ export default function FooterVenta({
   setOpenModalNavegarTickets,
   openModalAgregarTicket,
   setOpenModalAgregarTicket,
+  // [SQLite] Recibir función de cobro
+  onCobrar,
+  openModalVentasDia,
+  setOpenModalVentasDia,
 }: Props) {
 
   return (
@@ -72,7 +83,9 @@ export default function FooterVenta({
               />
             )}
 
-            <Button variant="secondary" onClick={()=> setOpenModalAgregarTicket(true)}>
+            <Button variant="secondary" onClick={()=> {setOpenModalAgregarTicket(true);
+              console.log("hice click sobre el boton de nuevo tickets",openModalAgregarTicket);
+            }}>
               F6 - Nuevo Ticket
             </Button>
             {openModalAgregarTicket && (
@@ -87,7 +100,8 @@ export default function FooterVenta({
             <Button variant="destructive" onClick={() => eliminar(activeTicket)}>
               Eliminar
             </Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            {/* [SQLite] Botón Cobrar conectado a la cola de tickets */}
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCobrar}>
               F12 - Cobrar
             </Button>
           </div>
@@ -108,9 +122,19 @@ export default function FooterVenta({
             <Button className="bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs px-3">
               Reimprimir Último Ticket
             </Button>
-            <Button className="bg-slate-300 text-slate-800 hover:bg-slate-400 text-xs px-3">
+            <Button className="bg-slate-300 text-slate-800 hover:bg-slate-400 text-xs px-3" onClick={()=> {
+                            setOpenModalVentasDia(true);
+                            console.log("hice click en abrir modal ventas", openModalVentasDia);}
+                          }>
               Ventas del día
             </Button>
+            {openModalVentasDia && (
+              <ModalVentasDia
+                open={openModalVentasDia}
+                setOpen={setOpenModalVentasDia} 
+                onFocusBarcode={onFocusBarcode}
+              />
+            )}
           </div>
         </div>
       </div>

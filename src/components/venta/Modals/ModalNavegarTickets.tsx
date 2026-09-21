@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 
 type Producto = {
-  id: number;
+  id: number | string;
   nombre: string;
   precio: number;
   cantidad: number;

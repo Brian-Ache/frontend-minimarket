@@ -5,7 +5,7 @@ type Ticket = {
 };
 
 type Producto = {
-  id: number;
+  id: number | string;
   nombre: string;
   precio: number;
   cantidad: number;
@@ -15,8 +15,8 @@ type Props = {
   tickets: Ticket[];
   activeTicket: number;
   setActiveTicket: (id: number) => void;
-  productoSeleccionadoId: number | null;
-  onSeleccionarProducto: (id: number | null) => void;
+  productoSeleccionadoId: number | string | null;
+  onSeleccionarProducto: (id: number | string | null) => void;
   onFocusBarcode: () => void;
 };
 

@@ -5,7 +5,7 @@ import ModalEntrada from "../Modals/ModalEntrada";
 import ModalSalida from "../Modals/ModalSalidas";
 
 interface Producto {
-  id: number;
+  id: number | string;
   barcode: string;
   nombre: string;
   precio: number;
@@ -13,8 +13,8 @@ interface Producto {
 }
 
 interface Props {
-  productoSeleccionadoId: number | null;
-  onEliminar: (id: number) => void;
+  productoSeleccionadoId: number | string | null;
+  onEliminar: (id: number | string) => void;
   OnAgregarProductoAlTicket: (producto: Producto) => void;
   onFocusBarcode: () => void;
   

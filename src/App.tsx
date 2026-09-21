@@ -15,6 +15,10 @@ import { BrowserRouter, useLocation } from "react-router-dom";
 import Navbar from "./components/navbar/Navbar";
 import AppRouter from "./routes/AppRouter";
 import { AuthProvider } from "./context/AuthContext";
+// [SQLite] Imports para sincronización de SQLite al iniciar
+import { useEffect } from "react";
+import { initDatabase } from "./services/venta/sqliteService";
+import { syncProductos, startRetryLoop } from "./services/venta/syncService";
 
 function AppLayout() {
   const location = useLocation();
@@ -35,6 +39,23 @@ function AppLayout() {
 }
 
 function App() {
+  // [SQLite] Inicializar BD local y sincronizar productos al iniciar la app
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await initDatabase();
+        console.log("[SQLite] Base de datos inicializada");
+        await syncProductos();
+        console.log("[SQLite] Productos sincronizados");
+      } catch (error) {
+        console.error("[SQLite] Error al inicializar:", error);
+      }
+    };
+    init();
+    // [SQLite] Iniciar loop de reintento de tickets pendientes
+    startRetryLoop();
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>

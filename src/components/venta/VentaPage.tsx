@@ -4,11 +4,15 @@ import Tickets from "./Components/Tickets";
 import FooterVenta from "./Components/FooterVenta";
 import { useState, useEffect, useRef } from "react";
 import { useVentaShortcuts } from "./Hooks/useVentaShortcuts";
+// [SQLite] Importar servicio de productos local y cobro con cola
+import { getProductoByBarcode } from "@/services/venta/sqliteService";
+import { cobrarTicket } from "@/services/venta/ventaLocalService";
+import { useAuth } from "@/context/AuthContext";
 
 // 1. Ya NO importamos TICKETS_INICIALES ni PRODUCTOS_DB
 // Solo importamos los Tipos para que TypeScript no de error
 interface Producto {
-  id: number;
+  id: number | string;
   barcode: string;
   nombre: string;
   precio: number;
@@ -28,6 +32,8 @@ const TICKETS_VACIOS: Ticket[] = [
 ];
 
 export default function VentaPage() {
+  // [SQLite] Obtener usuario autenticado para el cobro
+  const { user } = useAuth();
 
   //calcula el total de venta de los productos de un ticket
   const [total, setTotal] = useState(0);
@@ -44,7 +50,7 @@ export default function VentaPage() {
   const productosDelTicket = currentTicket ? currentTicket.productos : [];
 
   // Estado para el producto seleccionado en la tabla
-  const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | null>(null);
+  const [productoSeleccionadoId, setProductoSeleccionadoId] = useState<number | string | null>(null);
  
   const barraBusquedaRef = useRef<HTMLInputElement | null>(null);
 
@@ -56,11 +62,12 @@ export default function VentaPage() {
     salida: false,
     navegar: false,
     agregarTicket: false, 
+    ventasDia: false
   });
 
   //VARIABLE PARA SABER SI HAY ALGUN MODAL ABIERTO Y CUAL ES
   // Variable de bloqueo calculada en tiempo real: si uno de los modales es true, la app se congela
-  const isModalOpenVar = modales.buscar || modales.comun || modales.entrada || modales.salida || modales.navegar || modales.agregarTicket;
+  const isModalOpenVar = modales.buscar || modales.comun || modales.entrada || modales.salida || modales.navegar || modales.agregarTicket || modales.ventasDia;
 
   // Funciones ayudantes para cambiar estados de modales de forma segura
   /*tipo puede ser "buscar", "comun", "entrada", "salida" o "navegar"
@@ -123,15 +130,10 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
 //FUNCIONES PARA AGREGAR PRODUCTOS AL TICKET
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  const agregarProductoPorCodigo = (codigo: string) => {
-    const catalogoGuardado = localStorage.getItem('pos_productos');
-    if (!catalogoGuardado) return alert("El catálogo está vacío. Sincroniza en Configuración.");
-
-    const catalogo: any[] = JSON.parse(catalogoGuardado);
-    const productoEncontrado = catalogo.find(p => p.barcode === codigo);
-
+  // [SQLite] Agregar producto al ticket por código de barras (lee de SQLite en vez de localStorage)
+  const agregarProductoPorCodigo = async (codigo: string) => {
+    const productoEncontrado = await getProductoByBarcode(codigo);
     if (!productoEncontrado) return alert("Producto no encontrado");
-
     inyectarProductoAlTicket(productoEncontrado);
   };
   
@@ -182,7 +184,7 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
   // el producto debe estar en el ticket actual y se elimina completamente (no se resta cantidad, se elimina el producto del array)
   //se elimina el producto que este seleccionado en la tabla de productos del ticket
   //para selecionar un producto se le da click a la fila del producto en la tabla y se guarda el id del producto seleccionado en un estado local, luego se pasa ese id a esta función para eliminarlo del ticket 
-  const eliminarProductoDeTicket = (idProductoABorrar: number) => {
+  const eliminarProductoDeTicket = (idProductoABorrar: number | string) => {
   // 1. Buscamos el ticket activo actual para analizar sus productos actuales
   const ticketActivo = tickets.find(t => t.id === activeTicket);
   
@@ -251,7 +253,46 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
   }, [currentTicket]);
 
 
-  //ENLACE DE CUSTOM HOOK PARA NAVEGAR LA TABLA DE PRODUCTOS DEL TICKET Y ATAJOS DE TECLADO
+  // [SQLite] Función para cobrar el ticket actual
+  const cobrar = async () => {
+    if (!currentTicket || currentTicket.productos.length === 0) {
+      return alert("El ticket está vacío. Agregá productos primero.");
+    }
+    if (!user) {
+      return alert("No hay usuario autenticado.");
+    }
+
+    const productos = currentTicket.productos.map((p) => ({
+      id: p.id,
+      nombre: p.nombre,
+      precio: p.precio,
+      cantidad: p.cantidad,
+    }));
+
+    const resultado = await cobrarTicket(productos, user.id);
+
+    if (resultado.exito) {
+      alert("Venta registrada exitosamente");
+      // [SQLite] Vaciar el ticket actual después del cobro exitoso
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === activeTicket ? { ...t, productos: [] } : t
+        )
+      );
+      setProductoSeleccionadoId(null);
+    } else {
+      alert(resultado.mensaje);
+      // [SQLite] Aunque falle el backend, vaciar el ticket (ya quedó en la cola)
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === activeTicket ? { ...t, productos: [] } : t
+        )
+      );
+      setProductoSeleccionadoId(null);
+    }
+  };
+
+//ENLACE DE CUSTOM HOOK PARA NAVEGAR LA TABLA DE PRODUCTOS DEL TICKET Y ATAJOS DE TECLADO
   useVentaShortcuts({
     tickets,
     activeTicket,
@@ -316,6 +357,10 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
         setOpenModalNavegarTickets={(open) => toggleModal("navegar", open)} // Modificador unificado
         openModalAgregarTicket={modales.agregarTicket}//la pasamos el estado para saber si esta abierto  o no ese modal?
         setOpenModalAgregarTicket={(open) => toggleModal("agregarTicket", open)}
+        // [SQLite] Función de cobro conectada a la cola de tickets
+        onCobrar={cobrar}
+        openModalVentasDia={modales.ventasDia}//le pasamos el estado
+        setOpenModalVentasDia={(open)=>toggleModal("ventasDia", open)}
       />
     </div>
   );

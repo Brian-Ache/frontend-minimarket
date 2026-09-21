@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 interface Producto {
-  id: number;
+  id: number | string;
   barcode: string;
   nombre: string;
   precio: number;
@@ -70,7 +70,7 @@ export default function ModalAgregarProductoComun({
     }
 
     const nuevoProducto: Producto = {
-        id: Date.now(),
+        id: "manual-" + Date.now(),
         barcode: "",
         nombre,
         precio,

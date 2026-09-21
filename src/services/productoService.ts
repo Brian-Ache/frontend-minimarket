@@ -35,13 +35,13 @@ export async function searchProductos(q: string): Promise<ProductoResponse[]> {
 }
 
 export async function getCategorias(): Promise<CategoriaResponse[]> {
-  const { data } = await api.get<CategoriaResponse[]>("/api/categorias/v1");
-  return data;
+  const { data } = await api.get<PaginatedResponse<CategoriaResponse>>("/api/categorias/v1");
+  return data.content;
 }
 
 export async function getProveedores(): Promise<ProveedorResponse[]> {
-  const { data } = await api.get<ProveedorResponse[]>("/api/proveedores/v1");
-  return data;
+  const { data } = await api.get<PaginatedResponse<ProveedorResponse>>("/api/proveedores/v1");
+  return data.content;
 }
 
 export async function crearProducto(producto: CargaProductoRequest, idUsuario: string): Promise<ProductoResponse> {

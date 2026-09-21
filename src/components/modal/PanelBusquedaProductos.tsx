@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+// [SQLite] Importar servicio de productos local
+import { getProductos } from "@/services/venta/sqliteService";
 
+// [SQLite] Producto local con id string (UUID de SQLite)
 interface Producto {
-  id: number;
+  id: string;
   nombre: string;
   precio: number;
 }
@@ -18,16 +21,17 @@ export default function PanelBusquedaProductos({ isOpen, onClose, onSelect }: Pr
   const [filtro, setFiltro] = useState("");
   const [productos, setProductos] = useState<Producto[]>([]);
 
-  // Cargar productos del localStorage al abrir
+  // [SQLite] Cargar productos de SQLite al abrir
   useEffect(() => {
-    const data = localStorage.getItem("pos_productos");
-    if (data) setProductos(JSON.parse(data));
+    if (isOpen) {
+      getProductos().then(setProductos).catch(() => setProductos([]));
+    }
   }, [isOpen]);
 
-  // Filtrado en tiempo real
+  // [SQLite] Filtrado en tiempo real
   const productosFiltrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
-    p.id.toString().includes(filtro)
+    p.id.includes(filtro)
   );
 
   return (
@@ -59,7 +63,7 @@ export default function PanelBusquedaProductos({ isOpen, onClose, onSelect }: Pr
                   key={p.id} 
                   className="border-t border-border hover:bg-blue-50 cursor-pointer"
                   onClick={() => {
-                    onSelect(p.id.toString());
+                    onSelect(p.id);
                     onClose();
                   }}
                 >
