@@ -3,8 +3,9 @@
  *
  * Inicializa las tablas necesarias y provee funciones CRUD para:
  * - Productos (catálogo local sincronizado desde el backend)
- * - Cola de tickets (ventas pendientes de enviar al backend)
- * - Detalle de tickets (items de cada venta)
+ * - Eventos de la cola (eventos offline pendientes de sync: CREAR, ANULAR, ABRIR_SESION, CERRAR_SESION)
+ * - Detalle de eventos CREAR (items de cada venta)
+ * - Tickets locales (historial de ventas del día)
  *
  * Usa tauri-plugin-sql con SQLite.
  */
@@ -34,30 +35,32 @@ export async function initDatabase(): Promise<void> {
   `);
 
   await db.execute(`
-    CREATE TABLE IF NOT EXISTS tickets_cola (
+    CREATE TABLE IF NOT EXISTS evento_cola (
       id TEXT PRIMARY KEY,
-      id_venta_backend TEXT,
-      id_usuario TEXT NOT NULL,
-      id_sesion TEXT,
-      total REAL NOT NULL,
-      estado TEXT DEFAULT 'PENDIENTE',
+      tipo TEXT NOT NULL,              -- CREAR | ANULAR | ABRIR_SESION | CERRAR_SESION
+      uuid_entidad TEXT NOT NULL,      -- UUIDv7 del ticket o turno
+      secuencia INTEGER NOT NULL,
+      ocurrido_en TEXT NOT NULL,
+      payload TEXT NOT NULL,           -- JSON completo del evento
+      estado TEXT DEFAULT 'PENDIENTE', -- PENDIENTE | ENVIADO | ERROR
       intentos INTEGER DEFAULT 0,
       ultimo_error TEXT,
+      dispositivo TEXT,
       creado_en TEXT NOT NULL,
       enviado_en TEXT
     )
   `);
 
   await db.execute(`
-    CREATE TABLE IF NOT EXISTS tickets_detalle (
+    CREATE TABLE IF NOT EXISTS detalle_tickets_cola (
       id TEXT PRIMARY KEY,
-      id_ticket TEXT NOT NULL,
+      id_evento TEXT NOT NULL,
       tipo TEXT DEFAULT 'PRODUCTO',
       id_producto TEXT,
       nombre_manual TEXT,
       cantidad INTEGER NOT NULL,
       precio_unitario REAL NOT NULL,
-      FOREIGN KEY (id_ticket) REFERENCES tickets_cola(id)
+      FOREIGN KEY (id_evento) REFERENCES evento_cola(id)
     )
   `);
   
@@ -168,9 +171,6 @@ export async function upsertProductos(productos: ProductoLocal[]): Promise<void>
   await db.close();
 }
 
-// ============================================================
-// COLA DE TICKETS
-// ============================================================
 export interface TicketLocal {
   id: string;
   id_venta_backend: string | null;
@@ -184,23 +184,28 @@ export interface TicketLocal {
   enviado_en: string | null;
 }
 
-export interface TicketCola {
+// ============================================================
+// COLA DE EVENTOS (tickets, apertura/cierre de caja, anulaciones)
+// ============================================================
+export interface EventoCola {
   id: string;
-  id_venta_backend: string | null;
-  id_usuario: string;
-  id_sesion: string | null;
-  total: number;
-  estado: string;
+  tipo: string;                    // CREAR | ANULAR | ABRIR_SESION | CERRAR_SESION
+  uuid_entidad: string;            // UUIDv7 del ticket o turno
+  secuencia: number;
+  ocurrido_en: string;             // ISO datetime
+  payload: string;                 // JSON completo del evento
+  estado: string;                  // PENDIENTE | ENVIADO | ERROR
   intentos: number;
   ultimo_error: string | null;
-  creado_en: string;
-  enviado_en: string | null;
+  dispositivo: string | null;
+  creado_en: string;               // ISO datetime
+  enviado_en: string | null;       // ISO datetime
 }
 
-export interface TicketDetalle {
+export interface DetalleTicketCola {
   id: string;
-  id_ticket: string;
-  tipo: string;
+  id_evento: string;               // FK a evento_cola.id
+  tipo: string;                    // PRODUCTO | MANUAL
   id_producto: string | null;
   nombre_manual: string | null;
   cantidad: number;
@@ -217,33 +222,24 @@ export interface TicketDetalleLocal {
   precio_unitario: number;
 }
 
-// [SQLite] Crear ticket en la cola (siempre exitoso, es local)
-export async function crearTicket(ticketCola: TicketCola, detalles: TicketDetalle[]): Promise<void> {
+// [SQLite] Crear evento en la cola (siempre exitoso, es local)
+export async function crearEventoCola(evento: EventoCola, detalles?: DetalleTicketCola[]): Promise<void> {
   const db = await Database.load(DB_NAME);
 
   await db.execute(
-    `INSERT INTO tickets_cola (id, id_venta_backend, id_usuario, id_sesion, total, estado, intentos, ultimo_error, creado_en, enviado_en)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [ticketCola.id, ticketCola.id_venta_backend, ticketCola.id_usuario, ticketCola.id_sesion, ticketCola.total, ticketCola.estado, ticketCola.intentos, ticketCola.ultimo_error, ticketCola.creado_en, ticketCola.enviado_en]
+    `INSERT INTO evento_cola (id, tipo, uuid_entidad, secuencia, ocurrido_en, payload, estado, intentos, ultimo_error, dispositivo, creado_en, enviado_en)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [evento.id, evento.tipo, evento.uuid_entidad, evento.secuencia, evento.ocurrido_en, evento.payload, evento.estado, evento.intentos, evento.ultimo_error, evento.dispositivo, evento.creado_en, evento.enviado_en]
   );
-  await db.execute(
-    `INSERT INTO tickets_local (id, id_venta_backend, id_usuario, id_sesion, total, estado, intentos, ultimo_error, creado_en, enviado_en)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [ticketCola.id, ticketCola.id_venta_backend, ticketCola.id_usuario, ticketCola.id_sesion, ticketCola.total, ticketCola.estado, ticketCola.intentos, ticketCola.ultimo_error, ticketCola.creado_en, ticketCola.enviado_en]
-  );
-  for (const d of detalles) {
-    //inserta uno por uno los detalles en el ticket cola
-    await db.execute(
-      `INSERT INTO tickets_detalle (id, id_ticket, tipo, id_producto, nombre_manual, cantidad, precio_unitario)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [d.id, d.id_ticket, d.tipo, d.id_producto, d.nombre_manual, d.cantidad, d.precio_unitario]
-    );
-    //inserta uno por uno los detalles en el ticket local
-    await db.execute(
-      `INSERT INTO tickets_local_detalle (id, id_ticket, tipo, id_producto, nombre_manual, cantidad, precio_unitario)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [d.id, d.id_ticket, d.tipo, d.id_producto, d.nombre_manual, d.cantidad, d.precio_unitario]
-    );
+
+  if (detalles && detalles.length > 0) {
+    for (const d of detalles) {
+      await db.execute(
+        `INSERT INTO detalle_tickets_cola (id, id_evento, tipo, id_producto, nombre_manual, cantidad, precio_unitario)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [d.id, d.id_evento, d.tipo, d.id_producto, d.nombre_manual, d.cantidad, d.precio_unitario]
+      );
+    }
   }
 
   await db.close();
@@ -272,51 +268,51 @@ export async function getTicketDetalleLocal(idTicket: string): Promise<TicketDet
 }
 
  
-// [SQLite] Obtener tickets pendientes de envío
-export async function getTicketsPendientes(): Promise<TicketCola[]> {
+// [SQLite] Obtener eventos pendientes de envío
+export async function getEventosPendientes(): Promise<EventoCola[]> {
   const db = await Database.load(DB_NAME);
-  const rows = await db.select<TicketCola[]>(
-    "SELECT * FROM tickets_cola WHERE estado = 'PENDIENTE' ORDER BY creado_en"
+  const rows = await db.select<EventoCola[]>(
+    "SELECT * FROM evento_cola WHERE estado = 'PENDIENTE' ORDER BY creado_en"
   );
   await db.close();
   return rows;
 }
 
-// [SQLite] Obtener detalle de un ticket
-export async function getTicketDetalle(idTicket: string): Promise<TicketDetalle[]> {
+// [SQLite] Obtener detalle de un evento de la cola
+export async function getDetalleEventoCola(idEvento: string): Promise<DetalleTicketCola[]> {
   const db = await Database.load(DB_NAME);
-  const rows = await db.select<TicketDetalle[]>(
-    "SELECT * FROM tickets_detalle WHERE id_ticket = ?",
-    [idTicket]
+  const rows = await db.select<DetalleTicketCola[]>(
+    "SELECT * FROM detalle_tickets_cola WHERE id_evento = ?",
+    [idEvento]
   );
   await db.close();
   return rows;
 }
 
-// [SQLite] Marcar ticket como enviado (éxito del backend)
-export async function marcarTicketEnviado(id: string, idVentaBackend: string): Promise<void> {
+// [SQLite] Marcar evento como enviado (éxito del backend)
+export async function marcarEventoEnviado(id: string): Promise<void> {
   const db = await Database.load(DB_NAME);
   await db.execute(
-    `UPDATE tickets_cola SET estado = 'ENVIADO', id_venta_backend = ?, enviado_en = datetime('now') WHERE id = ?`,
-    [idVentaBackend, id]
+    `UPDATE evento_cola SET estado = 'ENVIADO', enviado_en = datetime('now') WHERE id = ?`,
+    [id]
   );
   await db.close();
 }
 
-// [SQLite] Marcar ticket con error (intento fallido)
-export async function marcarTicketError(id: string, error: string): Promise<void> {
+// [SQLite] Marcar evento con error (intento fallido)
+export async function marcarEventoError(id: string, error: string): Promise<void> {
   const db = await Database.load(DB_NAME);
   await db.execute(
-    `UPDATE tickets_cola SET intentos = intentos + 1, ultimo_error = ? WHERE id = ?`,
+    `UPDATE evento_cola SET intentos = intentos + 1, ultimo_error = ? WHERE id = ?`,
     [error, id]
   );
   await db.close();
 }
 
-// [SQLite] Eliminar ticket de la cola (después de enviado o si se cancela)
-export async function eliminarTicket(id: string): Promise<void> {
+// [SQLite] Eliminar evento de la cola (después de enviado o si se cancela)
+export async function eliminarEventoCola(id: string): Promise<void> {
   const db = await Database.load(DB_NAME);
-  await db.execute("DELETE FROM tickets_detalle WHERE id_ticket = ?", [id]);
-  await db.execute("DELETE FROM tickets_cola WHERE id = ?", [id]);
+  await db.execute("DELETE FROM detalle_tickets_cola WHERE id_evento = ?", [id]);
+  await db.execute("DELETE FROM evento_cola WHERE id = ?", [id]);
   await db.close();
 }
