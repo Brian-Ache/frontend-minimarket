@@ -13,6 +13,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
+  justLoggedIn: boolean;
+  clearJustLoggedIn: () => void;
 }
 
 
@@ -22,14 +24,16 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (token && storedUser) {
       setUser(JSON.parse(storedUser));
     }
+    setLoading(false);
   }, []);
 
   const login = async (usuario: string, password: string) => {
@@ -41,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("user", JSON.stringify(data.usuario));
       setToken(data.accessToken);
       setUser(data.usuario);
+      setJustLoggedIn(true);
     } catch (err: any) {
       const msg = err.response?.data?.message || "Error al iniciar sesión";
       setError(msg);
@@ -55,10 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("user");
     setToken(null);
     setUser(null);
+    setJustLoggedIn(false);
   };
 
+  const clearJustLoggedIn = () => setJustLoggedIn(false);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, loading, error }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, loading, error, justLoggedIn, clearJustLoggedIn }}>
       {children}
     </AuthContext.Provider>
   );

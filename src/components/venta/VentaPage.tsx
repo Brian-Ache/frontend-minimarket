@@ -8,6 +8,7 @@ import { useVentaShortcuts } from "./Hooks/useVentaShortcuts";
 import { getProductoByBarcode } from "@/services/venta/sqliteService";
 import { cobrarTicket } from "@/services/venta/ventaLocalService";
 import { useAuth } from "@/context/AuthContext";
+import { useSesion } from "@/context/SesionContext";
 
 // 1. Ya NO importamos TICKETS_INICIALES ni PRODUCTOS_DB
 // Solo importamos los Tipos para que TypeScript no de error
@@ -32,6 +33,9 @@ const TICKETS_VACIOS: Ticket[] = [
 ];
 
 export default function VentaPage() {
+  //id de la sesion de caja(para eso el import de useSesion)
+  const { idSesion } = useSesion();
+
   // [SQLite] Obtener usuario autenticado para el cobro
   const { user } = useAuth();
 
@@ -269,7 +273,7 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el Ã
       cantidad: p.cantidad,
     }));
 
-    const resultado = await cobrarTicket(productos, user.id);
+    const resultado = await cobrarTicket(productos, user.id, idSesion ?? undefined);
 
     if (resultado.exito) {
       alert("Venta registrada exitosamente");

@@ -19,6 +19,9 @@ import { AuthProvider } from "./context/AuthContext";
 import { useEffect } from "react";
 import { initDatabase } from "./services/venta/sqliteService";
 import { syncProductos, startRetryLoop } from "./services/venta/syncService";
+import { SesionProvider } from "./context/SesionContext";
+import ModalAbrirCaja from "./components/caja/ModalAbrirCaja";
+
 
 function AppLayout() {
   const location = useLocation();
@@ -34,6 +37,7 @@ function AppLayout() {
       <div className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
         <AppRouter />
       </div>
+      <ModalAbrirCaja />
     </div>
   );
 }
@@ -59,7 +63,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppLayout />
+        <SesionProvider>
+         <AppLayout />
+       </SesionProvider>
       </AuthProvider>
     </BrowserRouter>
   );
