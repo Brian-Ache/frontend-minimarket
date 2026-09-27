@@ -36,6 +36,14 @@ export async function cobrarTicket(
   idSesion?: string,
   metodoPago: string = "EFECTIVO"
 ): Promise<ResultadoCobro> {
+  if (!idSesion) {
+    return {
+      exito: false,
+      ticketId: "",
+      mensaje: "No hay una sesión de caja abierta. Debés abrir la caja antes de vender."
+    };
+  }
+
   const ticketId = uuidV7();
   const total = productos.reduce((acc, p) => acc + p.precio * p.cantidad, 0);
   const ahora = new Date().toISOString();

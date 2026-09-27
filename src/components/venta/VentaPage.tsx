@@ -34,7 +34,7 @@ const TICKETS_VACIOS: Ticket[] = [
 
 export default function VentaPage() {
   //id de la sesion de caja(para eso el import de useSesion)
-  const { idSesion } = useSesion();
+  const { idSesion, haySesion } = useSesion();
 
   // [SQLite] Obtener usuario autenticado para el cobro
   const { user } = useAuth();
@@ -259,6 +259,9 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
 
   // [SQLite] Función para cobrar el ticket actual
   const cobrar = async () => {
+    if (!haySesion) {
+      return alert("No hay una sesión de caja abierta. Abrí la caja primero.");
+    }
     if (!currentTicket || currentTicket.productos.length === 0) {
       return alert("El ticket está vacío. Agregá productos primero.");
     }
@@ -355,16 +358,15 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
         agregar={crearNuevoTicket} 
         eliminar={eliminarTicket} 
         cambiar={cambiarTicketActivo} 
-        //onSetIsModalOpen={(open) => toggleModal("buscar", open)} // Puedes simplificar o adaptar según use el footer
         onFocusBarcode={onFocusBarcode}
-        openModalNavegarTickets={modales.navegar} //Le pasamos el estado real
-        setOpenModalNavegarTickets={(open) => toggleModal("navegar", open)} // Modificador unificado
-        openModalAgregarTicket={modales.agregarTicket}//la pasamos el estado para saber si esta abierto  o no ese modal?
+        openModalNavegarTickets={modales.navegar}
+        setOpenModalNavegarTickets={(open) => toggleModal("navegar", open)}
+        openModalAgregarTicket={modales.agregarTicket}
         setOpenModalAgregarTicket={(open) => toggleModal("agregarTicket", open)}
-        // [SQLite] Función de cobro conectada a la cola de tickets
         onCobrar={cobrar}
-        openModalVentasDia={modales.ventasDia}//le pasamos el estado
+        openModalVentasDia={modales.ventasDia}
         setOpenModalVentasDia={(open)=>toggleModal("ventasDia", open)}
+        haySesion={haySesion}
       />
     </div>
   );

@@ -23,10 +23,10 @@ type Props = {
   activeTicket: number;
   agregar: (nombre: string) => void;
   eliminar : (id: number) => void;
-  
+   
   cambiar: (id: number) => void;
   onFocusBarcode: () => void;
-  
+   
   // Padre controla este modal(venta page)
   openModalNavegarTickets: boolean;
   setOpenModalNavegarTickets: (isOpen: boolean) => void;
@@ -41,6 +41,8 @@ type Props = {
   //openModalVentasDia
   openModalVentasDia: boolean;
   setOpenModalVentasDia: (isopen:boolean) => void;
+
+  haySesion: boolean;
 };
 
 export default function FooterVenta({ 
@@ -60,6 +62,7 @@ export default function FooterVenta({
   onCobrar,
   openModalVentasDia,
   setOpenModalVentasDia,
+  haySesion,
 }: Props) {
 
   return (
@@ -101,7 +104,7 @@ export default function FooterVenta({
               Eliminar
             </Button>
             {/* [SQLite] Botón Cobrar conectado a la cola de tickets */}
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCobrar}>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCobrar} disabled={!haySesion}>
               F12 - Cobrar
             </Button>
           </div>

@@ -4,11 +4,15 @@ import RegistrarUsModal from "./modals/registrarUsModal";
 // [SQLite] Importar servicio de sincronización
 import { syncProductos } from "@/services/venta/syncService";
 import { getSesionActiva, cerrarSesion, type SesionActiva } from "@/services/cajaService";
+import { useSesion } from "@/context/SesionContext";
+import { useAuth } from "@/context/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 
 export default function ConfiguracionPage() {
+  const { haySesion, cerrar } = useSesion();
+  const { clearJustLoggedIn } = useAuth();
   const [cargando, setCargando] = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
   // [SQLite] Estado para mensaje de sincronización
@@ -47,8 +51,14 @@ export default function ConfiguracionPage() {
       const sesionActiva = await getSesionActiva();
       setSesionEncontrada(sesionActiva);
       setModalCorteAbierto(true);
-    } catch {
-      setErrorCorte("No hay caja abierta para cerrar");
+    } catch (err: any) {
+      const msg = err.response?.data?.error || "";
+      if (msg.includes("Ya existe")) {
+        setErrorCorte("Hay una sesión abierta. Ingresá el saldo real para cerrarla.");
+        setModalCorteAbierto(true);
+      } else {
+        setErrorCorte("No hay caja abierta para cerrar");
+      }
     }
   };
 
@@ -63,12 +73,16 @@ export default function ConfiguracionPage() {
     setErrorCorte("");
     try {
       await cerrarSesion(monto, 0);
+      console.log("Caja cerrada exitosamente");
+      cerrar();
+      clearJustLoggedIn();
       setModalCorteAbierto(false);
       setSaldoReal("");
       setSesionEncontrada(null);
       setMensajeSync("Caja cerrada exitosamente");
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Error al cerrar la caja";
+      const msg = err.response?.data?.error || "Error al cerrar la caja";
+      console.error("Error al cerrar caja:", msg);
       setErrorCorte(msg);
     } finally {
       setCerrando(false);

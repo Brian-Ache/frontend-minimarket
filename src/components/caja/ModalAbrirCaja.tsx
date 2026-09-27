@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSesion } from "@/context/SesionContext";
 import { useAuth } from "@/context/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -6,11 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function ModalAbrirCaja() {
-  const { sesion, loading, abrir, recargar } = useSesion();
+  const { haySesion, loading, abrir, recargar } = useSesion();
   const { isAuthenticated, justLoggedIn, clearJustLoggedIn } = useAuth();
   const [saldoInicial, setSaldoInicial] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    if (justLoggedIn) {
+      recargar();
+    }
+  }, [justLoggedIn]);
 
   const handleAbrir = async () => {
     const monto = parseFloat(saldoInicial);
@@ -22,11 +28,13 @@ export default function ModalAbrirCaja() {
     setCargando(true);
     setError("");
     try {
-      await abrir(monto);
+      const nueva = await abrir(monto);
+      console.log("Caja abierta exitosamente:", nueva);
       clearJustLoggedIn();
       setSaldoInicial("");
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Error al abrir la caja";
+      const msg = err.response?.data?.error || "Error al abrir la caja";
+      console.error("Error al abrir caja:", msg);
       if (msg.includes("Ya existe")) {
         await recargar();
         clearJustLoggedIn();
@@ -50,7 +58,19 @@ export default function ModalAbrirCaja() {
   };
 
   // Solo mostrar inmediatamente después del login, si no hay sesión abierta
-  if (loading || sesion || !isAuthenticated || !justLoggedIn) return null;
+  if (loading) return (
+    <Dialog open>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Cargando...</DialogTitle>
+          <DialogDescription>
+            Verificando sesión de caja.
+          </DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  );
+  if (haySesion || !isAuthenticated || !justLoggedIn) return null;
 
   return (
     <Dialog open onOpenChange={() => {}}>
