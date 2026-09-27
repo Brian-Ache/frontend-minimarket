@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 
 
 export default function ConfiguracionPage() {
-  const { haySesion, cerrar } = useSesion();
+  const { cerrar, abrir } = useSesion();
   const { clearJustLoggedIn } = useAuth();
   const [cargando, setCargando] = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -24,6 +24,33 @@ export default function ConfiguracionPage() {
   const [cerrando, setCerrando] = useState(false);
   const [errorCorte, setErrorCorte] = useState("");
   const [sesionEncontrada, setSesionEncontrada] = useState<SesionActiva | null>(null);
+
+  // Estado para abrir caja
+  const [saldoInicial, setSaldoInicial] = useState("");
+  const [cargandoApertura, setCargandoApertura] = useState(false);
+  const [errorApertura, setErrorApertura] = useState("");
+
+  const handleAbrir = async () => {
+    const monto = parseFloat(saldoInicial);
+    if (isNaN(monto) || monto < 0) {
+      setErrorApertura("Ingresá un monto válido (0 o más)");
+      return;
+    }
+    setCargandoApertura(true);
+    setErrorApertura("");
+    try {
+      await abrir(monto);
+      console.log("Caja abierta exitosamente");
+      clearJustLoggedIn();
+      setSaldoInicial("");
+    } catch (err: any) {
+      const msg = err.response?.data?.error || "Error al abrir la caja";
+      console.error("Error al abrir caja:", msg);
+      setErrorApertura(msg);
+    } finally {
+      setCargandoApertura(false);
+    }
+  };
 
   // [SQLite] Sincronizar productos desde el backend hacia SQLite
   const sincronizarCatalogo = async () => {
@@ -52,14 +79,16 @@ export default function ConfiguracionPage() {
       setSesionEncontrada(sesionActiva);
       setModalCorteAbierto(true);
     } catch (err: any) {
-      const msg = err.response?.data?.error || "";
-      if (msg.includes("Ya existe")) {
+    const status = err.response?.status;
+    if (status === 409) {
         setErrorCorte("Hay una sesión abierta. Ingresá el saldo real para cerrarla.");
         setModalCorteAbierto(true);
-      } else {
+    } else if (status === 404) {
         setErrorCorte("No hay caja abierta para cerrar");
-      }
+    } else {
+        setErrorCorte(err.response?.data?.error || "Error al cerrar la caja");
     }
+}
   };
 
   const confirmarCierre = async () => {
@@ -113,6 +142,28 @@ export default function ConfiguracionPage() {
         Registrar
       </Button>
 
+      <div className="flex items-center gap-2 m-2">
+        <Button
+          variant="default"
+          className="bg-green-600 hover:bg-green-700"
+          onClick={handleAbrir}
+          disabled={cargandoApertura}
+        >
+          {cargandoApertura ? "Abriendo..." : "Abrir Caja"}
+        </Button>
+        <Input
+          type="number"
+          min="0"
+          step="any"
+          placeholder="Saldo inicial $"
+          value={saldoInicial}
+          onChange={(e) => { setSaldoInicial(e.target.value); setErrorApertura(""); }}
+          className="w-32"
+        />
+        {errorApertura && (
+          <span className="text-sm text-red-500">{errorApertura}</span>
+        )}
+      </div>
       <Button
         className="m-2"
         variant="destructive"

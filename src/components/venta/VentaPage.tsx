@@ -34,7 +34,7 @@ const TICKETS_VACIOS: Ticket[] = [
 
 export default function VentaPage() {
   //id de la sesion de caja(para eso el import de useSesion)
-  const { idSesion, haySesion } = useSesion();
+  const { idSesion, sesion } = useSesion();
 
   // [SQLite] Obtener usuario autenticado para el cobro
   const { user } = useAuth();
@@ -259,7 +259,7 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el Ã
 
   // [SQLite] FunciÃ³n para cobrar el ticket actual
   const cobrar = async () => {
-    if (!haySesion) {
+    if (!sesion) {
       return alert("No hay una sesiÃ³n de caja abierta. AbrÃ­ la caja primero.");
     }
     if (!currentTicket || currentTicket.productos.length === 0) {
@@ -366,7 +366,7 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el Ã
         onCobrar={cobrar}
         openModalVentasDia={modales.ventasDia}
         setOpenModalVentasDia={(open)=>toggleModal("ventasDia", open)}
-        haySesion={haySesion}
+        sesion={sesion}
       />
     </div>
   );

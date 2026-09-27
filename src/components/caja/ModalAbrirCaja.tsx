@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function ModalAbrirCaja() {
-  const { haySesion, loading, abrir, recargar } = useSesion();
+  const { sesion, loading, abrir, cargar } = useSesion();
   const { isAuthenticated, justLoggedIn, clearJustLoggedIn } = useAuth();
   const [saldoInicial, setSaldoInicial] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +14,7 @@ export default function ModalAbrirCaja() {
 
   useEffect(() => {
     if (justLoggedIn) {
-      recargar();
+      cargar();
     }
   }, [justLoggedIn]);
 
@@ -28,19 +28,23 @@ export default function ModalAbrirCaja() {
     setCargando(true);
     setError("");
     try {
-      const nueva = await abrir(monto);
-      console.log("Caja abierta exitosamente:", nueva);
+      await abrir(monto);
+      console.log("Caja abierta exitosamente");
       clearJustLoggedIn();
       setSaldoInicial("");
     } catch (err: any) {
+      const status = err.response?.status;
       const msg = err.response?.data?.error || "Error al abrir la caja";
-      console.error("Error al abrir caja:", msg);
-      if (msg.includes("Ya existe")) {
-        await recargar();
-        clearJustLoggedIn();
+      if (status === 409) {
+        setError("Ya hay una caja abierta. Debés cerrarla primero.");
+      } else if (status === 404) {
+        setError("No hay sesión activa.");
       } else {
         setError(msg);
       }
+      console.error("Error al abrir caja:", msg, "- Status:", status);
+      await cargar();
+      clearJustLoggedIn();
     } finally {
       setCargando(false);
     }
@@ -57,7 +61,6 @@ export default function ModalAbrirCaja() {
     clearJustLoggedIn();
   };
 
-  // Solo mostrar inmediatamente después del login, si no hay sesión abierta
   if (loading) return (
     <Dialog open>
       <DialogContent className="sm:max-w-sm">
@@ -70,7 +73,7 @@ export default function ModalAbrirCaja() {
       </DialogContent>
     </Dialog>
   );
-  if (haySesion || !isAuthenticated || !justLoggedIn) return null;
+  if (sesion || !isAuthenticated || !justLoggedIn) return null;
 
   return (
     <Dialog open onOpenChange={() => {}}>

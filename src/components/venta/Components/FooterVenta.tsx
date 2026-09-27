@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { type SesionActiva } from "@/services/cajaService";
 import ModalNavegarTickets from "../Modals/ModalNavegarTickets";
 import ModalAgregarTicket from "../Modals/ModalAgregarTicket";
 import ModalVentasDia from "../Modals/ModalVentasDia";
@@ -42,7 +43,7 @@ type Props = {
   openModalVentasDia: boolean;
   setOpenModalVentasDia: (isopen:boolean) => void;
 
-  haySesion: boolean;
+  sesion: SesionActiva | null;
 };
 
 export default function FooterVenta({ 
@@ -62,7 +63,7 @@ export default function FooterVenta({
   onCobrar,
   openModalVentasDia,
   setOpenModalVentasDia,
-  haySesion,
+  sesion,
 }: Props) {
 
   return (
@@ -104,7 +105,7 @@ export default function FooterVenta({
               Eliminar
             </Button>
             {/* [SQLite] Botón Cobrar conectado a la cola de tickets */}
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCobrar} disabled={!haySesion}>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCobrar} disabled={!sesion}>
               F12 - Cobrar
             </Button>
           </div>

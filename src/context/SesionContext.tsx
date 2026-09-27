@@ -3,19 +3,17 @@ import { getSesionActiva, abrirSesion, type SesionActiva } from "@/services/caja
 
 interface SesionContextType {
   sesion: SesionActiva | null;
-  haySesion: boolean;
   idSesion: string | null;
   loading: boolean;
   abrir: (saldoInicial: number) => Promise<void>;
   cerrar: () => void;
-  recargar: () => Promise<void>;
+  cargar: () => Promise<void>;
 }
 
 const SesionContext = createContext<SesionContextType | null>(null);
 
 export function SesionProvider({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<SesionActiva | null>(null);
-  const [haySesion, setHaySesion] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,23 +24,15 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     try {
       const activa = await getSesionActiva();
       setSesion(activa);
-      setHaySesion(true);
       console.log("[Sesión] Sesión activa cargada:", activa.id);
     } catch (err: any) {
-      if (err.response?.status === 400 &&
-          err.response?.data?.error?.includes("No hay")) {
+      if (err.response?.status === 404) {
         console.warn("[Sesión] No hay sesión de caja abierta");
-        setHaySesion(false);
-      } else if (err.response?.status === 400 &&
-                 err.response?.data?.error?.includes("Ya existe")) {
-        console.warn("[Sesión] Ya existe una sesión de caja abierta");
-        setHaySesion(true);
       } else {
         console.error("[Sesión] Error al cargar sesión:", err);
-        setHaySesion(false);
       }
       setSesion(null);
-    } finally {
+    } finally { 
       setLoading(false);
     }
   };
@@ -50,20 +40,14 @@ export function SesionProvider({ children }: { children: ReactNode }) {
   const abrir = async (saldoInicial: number) => {
     const nueva = await abrirSesion(saldoInicial);
     setSesion(nueva);
-    setHaySesion(true);
   };
 
   const cerrar = () => {
     setSesion(null);
-    setHaySesion(false);
-  };
-
-  const recargar = async () => {
-    await cargar();
   };
 
   return (
-    <SesionContext.Provider value={{ sesion, haySesion, idSesion: sesion?.id ?? null, loading, abrir, cerrar, recargar }}>
+    <SesionContext.Provider value={{ sesion, idSesion: sesion?.id ?? null, loading, abrir, cerrar, cargar }}>
       {children}
     </SesionContext.Provider>
   );
