@@ -23,15 +23,6 @@ type ProductoVenta = {
   subtotal: number;
 };
 
-type TicketVenta = {
-  id: number;
-  fecha: string;
-  hora: string;
-  total: number;
-  estado: "Sincronizado" | "Pendiente";
-  productos: ProductoVenta[];
-};
-
 
 interface ModalVentasDiaProps {
   open: boolean;
@@ -107,14 +98,7 @@ export default function ModalVentasDia({
   );
 
   //un arreglo con los productos de un detalle de un ticket
-  const [productos, setProductos] = useState<
-    Array<{
-      nombre: string;
-      cantidad: number;
-      precio: number;
-      subtotal: number;
-    }>
-  >([]);
+  const [productos, setProductos] = useState<ProductoVenta[]>([]);
 
   //CUANDO SE RENDERIZA UN DETALLE vuelca cada uno de los productos en el arreglo de productos
   useEffect(() => {
@@ -148,6 +132,20 @@ export default function ModalVentasDia({
       setTimeout(() => {
         onFocusBarcode();
       }, 0);
+    }
+  };
+
+  //Como tickets_local guarda PENDIENTE | ENVIADO | ERROR, cada uno se muestra
+  //con su color y su simbolo: pendiente es que todavia no llego al backend,
+  //error es que el backend lo rechazo y alguien tiene que mirarlo.
+  const estadoVisible = (estado: string) => {
+    switch (estado) {
+      case "ENVIADO":
+        return { texto: "Sincronizado", clase: "text-emerald-600", simbolo: "✓" };
+      case "ERROR":
+        return { texto: "Error de sincronización", clase: "text-red-600", simbolo: "✗" };
+      default:
+        return { texto: "Pendiente", clase: "text-amber-600", simbolo: "!" };
     }
   };
 
@@ -203,14 +201,9 @@ export default function ModalVentasDia({
                             - ${Number(ticket.total).toFixed(2)}
                           </span>
                           <span
-                            className={[
-                              "text-xs font-semibold",
-                              ticket.estado === "PENDIENTE"
-                                ? "text-amber-600"
-                                : "text-emerald-600",
-                            ].join(" ")}
+                            className={`text-xs font-semibold ${estadoVisible(ticket.estado).clase}`}
                           >
-                            {ticket.estado === "PENDIENTE" ? "!" : "✓"}
+                            {estadoVisible(ticket.estado).simbolo}
                           </span>
                         </div>
                       </button>
@@ -251,15 +244,8 @@ export default function ModalVentasDia({
                     </div>
                     <div>
                       <span className="text-slate-500">Estado:</span>{" "}
-                      <span
-                        className={[
-                          "font-medium",
-                          selectedTicket.estado === "PENDIENTE"
-                            ? "text-amber-600"
-                            : "text-emerald-600",
-                        ].join(" ")}
-                      >
-                        {selectedTicket.estado}
+                      <span className={`font-medium ${estadoVisible(selectedTicket.estado).clase}`}>
+                        {estadoVisible(selectedTicket.estado).texto}
                       </span>
                     </div>
                     <div>
@@ -269,6 +255,12 @@ export default function ModalVentasDia({
                       </span>
                     </div>
                   </div>
+
+                  {selectedTicket.estado === "ERROR" && selectedTicket.ultimo_error && (
+                    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {selectedTicket.ultimo_error}
+                    </div>
+                  )}
 
                   <div className="overflow-hidden rounded-md border border-slate-200">
                     <table className="w-full text-left text-sm">

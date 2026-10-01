@@ -13,6 +13,8 @@ import {
   getEventosPendientes,
   marcarEventoEnviado,
   marcarEventoError,
+  marcarEventoFalloDefinitivo,
+  marcarTicketLocalSincronizado,
   type ProductoLocal,
 } from "./sqliteService";
 
@@ -120,13 +122,16 @@ async function enviarLoteBackend(): Promise<{ enviados: number; fallidos: number
         const uuid = resultado.uuid;
         if (resultado.estado === "OK" || resultado.requiereRevision) {
           await marcarEventoEnviado(uuid);
+          // El historial del día refleja que la venta ya está en el backend
+          await marcarTicketLocalSincronizado(uuid);
           enviados++;
         } else if (resultado.reintentable) {
           await marcarEventoError(uuid, resultado.mensaje || "Error reintentable");
           fallidos++;
         } else {
-          // Error no reintentable: marcar con error para que quede registrado
-          await marcarEventoError(uuid, resultado.mensaje || "Error no reintentable");
+          // Reintentar no va a cambiar nada: el evento sale de la cola y queda
+          // marcado en ERROR para que alguien lo mire, en vez de girar cada 15s
+          await marcarEventoFalloDefinitivo(uuid, resultado.mensaje || "Error no reintentable");
           fallidos++;
         }
       }

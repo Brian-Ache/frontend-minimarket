@@ -88,9 +88,22 @@ export async function initDatabase(): Promise<void> {
       cantidad INTEGER NOT NULL,
       precio_unitario REAL NOT NULL,
       FOREIGN KEY (id_ticket) REFERENCES tickets_local(id)
-    );
+    )
   `)
-    
+
+  // [SQLite] Retención: el historial de ventas locales vive 7 días.
+  // Se limpia al arrancar, antes de que nadie lea la tabla.
+  const limite = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const viejos = await db.select<{ id: string; creado_en: string }[]>(
+    "SELECT id, creado_en FROM tickets_local"
+  );
+  for (const t of viejos) {
+    if (new Date(t.creado_en).getTime() < limite) {
+      await db.execute("DELETE FROM tickets_local_detalle WHERE id_ticket = ?", [t.id]);
+      await db.execute("DELETE FROM tickets_local WHERE id = ?", [t.id]);
+    }
+  }
+
   await db.close();
 }
 
@@ -245,15 +258,48 @@ export async function crearEventoCola(evento: EventoCola, detalles?: DetalleTick
   await db.close();
 }
 
-//trae los tickets de un dia
+//trae los tickets de un dia (el dia local de la caja, no el UTC)
 export async function getTicketsDia():
 Promise<TicketLocal[]> {
   const db = await Database.load(DB_NAME);
   const rows = await db.select<TicketLocal[]>(
-    "SELECT * FROM tickets_local"
+    "SELECT * FROM tickets_local ORDER BY creado_en DESC"
   )
   await db.close();
-  return rows;
+  const hoy = new Date().toDateString();
+  return rows.filter((t) => new Date(t.creado_en).toDateString() === hoy);
+}
+
+// [SQLite] Historial de la venta del dia: se escribe al cobrar, con el mismo
+// UUID que el evento de la cola, y se marca ENVIADO cuando el sync la acepta.
+export async function crearTicketLocal(ticket: TicketLocal, detalles: TicketDetalleLocal[]): Promise<void> {
+  const db = await Database.load(DB_NAME);
+
+  await db.execute(
+    `INSERT INTO tickets_local (id, id_venta_backend, id_usuario, id_sesion, total, estado, intentos, ultimo_error, creado_en, enviado_en)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [ticket.id, ticket.id_venta_backend, ticket.id_usuario, ticket.id_sesion, ticket.total, ticket.estado, ticket.intentos, ticket.ultimo_error, ticket.creado_en, ticket.enviado_en]
+  );
+
+  for (const d of detalles) {
+    await db.execute(
+      `INSERT INTO tickets_local_detalle (id, id_ticket, tipo, id_producto, nombre_manual, cantidad, precio_unitario)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [d.id, d.id_ticket, d.tipo, d.id_producto, d.nombre_manual, d.cantidad, d.precio_unitario]
+    );
+  }
+
+  await db.close();
+}
+
+// [SQLite] El backend aceptó el evento: la venta del día queda sincronizada
+export async function marcarTicketLocalSincronizado(id: string): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    `UPDATE tickets_local SET estado = 'ENVIADO', enviado_en = datetime('now') WHERE id = ?`,
+    [id]
+  );
+  await db.close();
 }
 
 //trae los detalles de un ticket del dia por su id
@@ -299,11 +345,27 @@ export async function marcarEventoEnviado(id: string): Promise<void> {
   await db.close();
 }
 
-// [SQLite] Marcar evento con error (intento fallido)
+// [SQLite] Marcar evento con error (intento fallido, se reintenta)
 export async function marcarEventoError(id: string, error: string): Promise<void> {
   const db = await Database.load(DB_NAME);
   await db.execute(
     `UPDATE evento_cola SET intentos = intentos + 1, ultimo_error = ? WHERE id = ?`,
+    [error, id]
+  );
+  await db.close();
+}
+
+// [SQLite] Error definitivo: el backend dijo que reintentar no cambia nada.
+// El evento sale de la cola (estado ERROR) y la venta del día queda marcada
+// para que alguien la mire, en vez de reintentar cada 15 segundos para siempre.
+export async function marcarEventoFalloDefinitivo(id: string, error: string): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    `UPDATE evento_cola SET estado = 'ERROR', intentos = intentos + 1, ultimo_error = ? WHERE id = ?`,
+    [error, id]
+  );
+  await db.execute(
+    `UPDATE tickets_local SET estado = 'ERROR', intentos = intentos + 1, ultimo_error = ? WHERE id = ?`,
     [error, id]
   );
   await db.close();

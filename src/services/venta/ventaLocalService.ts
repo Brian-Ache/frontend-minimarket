@@ -10,6 +10,7 @@
  */
 import {
   crearEventoCola,
+  crearTicketLocal,
   type EventoCola,
   type DetalleTicketCola,
 } from "./sqliteService";
@@ -48,6 +49,12 @@ export async function cobrarTicket(
   const total = productos.reduce((acc, p) => acc + p.precio * p.cantidad, 0);
   const ahora = new Date().toISOString();
 
+  const fecha = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const ahoraLocal =
+    `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}T` +
+    `${pad(fecha.getHours())}:${pad(fecha.getMinutes())}:${pad(fecha.getSeconds())}`;
+
   // [SQLite] Armar detalles para la cola
   const detalles: DetalleTicketCola[] = productos.map((p) => ({
     id: uuidV7(),
@@ -64,7 +71,7 @@ export async function cobrarTicket(
     uuid: ticketId,
     tipo: "CREAR",
     secuencia: Date.now(),
-    ocurridoEn: ahora,
+    ocurridoEn: ahoraLocal,
     idVendedor: idUsuario,
     idSesion: idSesion || null,
     total,
@@ -97,6 +104,33 @@ export async function cobrarTicket(
 
   // [SQLite] Guardar en SQLite (siempre exitoso, es local)
   await crearEventoCola(evento, detalles);
+
+  // [SQLite] Historial del día: mismo UUID que el evento, para que cuando el
+  // sync lo acepte se pueda marcar como sincronizado acá. Es lo que lee el
+  // modal de Ventas del Día.
+  await crearTicketLocal(
+    {
+      id: ticketId,
+      id_venta_backend: null,
+      id_usuario: idUsuario,
+      id_sesion: idSesion,
+      total,
+      estado: "PENDIENTE",
+      intentos: 0,
+      ultimo_error: null,
+      creado_en: ahora,
+      enviado_en: null,
+    },
+    detalles.map((d) => ({
+      id: d.id,
+      id_ticket: d.id_evento,
+      tipo: d.tipo,
+      id_producto: d.id_producto,
+      nombre_manual: d.nombre_manual,
+      cantidad: d.cantidad,
+      precio_unitario: d.precio_unitario,
+    }))
+  );
 
   return {
     exito: true,
