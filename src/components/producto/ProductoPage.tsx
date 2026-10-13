@@ -18,12 +18,11 @@ export default function ProductoPage() {
   return (
     <div className="w-full h-full flex flex-col gap-3 p-3 overflow-hidden">
 
-      {/* ➕ Formulario */}
       <div className="shrink-0">
         <FormProducto onCreated={() => setRefreshKey((k) => k + 1)} />
       </div>
 
-      {/* 📋 Tabla */}
+
       <div className="flex-1 min-h-0">
         <TablaProductos refreshKey={refreshKey} onRefresh={() => setRefreshKey((k) => k + 1)} />
       </div>

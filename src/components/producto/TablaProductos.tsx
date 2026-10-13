@@ -178,6 +178,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
 
         {/* Selector de Proveedor dinamico */}
         <div className="grid gap-2">
+          <Label className="text-slate-600">Proveedor</Label>
           <Select
             value={proveedorId ?? "__ALL__"}
             onValueChange={(value) =>
@@ -198,6 +199,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
 
         {/* Selector de Categoria dinamico */}
         <div className="grid gap-2">
+          <Label className="text-slate-600">Categoría</Label>
           <Select
             value={categoriaId ?? "__ALL__"}
             onValueChange={(value) =>

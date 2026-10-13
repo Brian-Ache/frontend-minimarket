@@ -10,10 +10,12 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { Plus } from "lucide-react";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import useCargarProducto from "@/hooks/useCargarProducto";
 import { getCategorias, getProveedores } from "@/services/productoService";
+import ModalCategorias from "./ModalCategorias";
 import type { CategoriaResponse } from "@/types/response/categoriaResponse";
 import type { ProveedorResponse } from "@/types/response/proveedorResponse";
 
@@ -21,11 +23,13 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
   const { form, handleChange, cargar, loading, error, reset } = useCargarProducto();
   const [categorias, setCategorias] = useState<CategoriaResponse[]>([]);
   const [proveedores, setProveedores] = useState<ProveedorResponse[]>([]);
+  const [modalCategorias, setModalCategorias] = useState(false);
+  const [tickCategorias, setTickCategorias] = useState(0);
 
   useEffect(() => {
     getCategorias().then(setCategorias).catch(() => {});
     getProveedores().then(setProveedores).catch(() => {});
-  }, []);
+  }, [tickCategorias]);
 
   const handleGuardar = async () => {
     try {
@@ -52,13 +56,26 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
 
       <div className="col-span-1 grid gap-2">
         <Label className="text-slate-600">Categoría</Label>
-        <Select value={form.idCategoria ?? ""}
-          onValueChange={(v) => handleChange("idCategoria", v)}>
-          <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-          <SelectContent>
-            {categorias.map(c => <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-1">
+          <Select value={form.idCategoria ?? ""}
+            onValueChange={(v) => handleChange("idCategoria", v)}>
+            <SelectTrigger className="flex-1 min-w-0"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
+            <SelectContent>
+              {categorias.map(c => (
+                <SelectItem key={c.id} value={c.id} title={c.descripcion ?? ""}>{c.nombre}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            title="Gestionar categorías"
+            onClick={() => setModalCategorias(true)}
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="col-span-2 grid gap-2">
@@ -88,6 +105,15 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
       </div>
 
       {error && <p className="col-span-6 text-red-500 text-sm">{error}</p>}
+
+      <ModalCategorias
+        open={modalCategorias}
+        onClose={() => setModalCategorias(false)}
+        onCreada={(id) => {
+          handleChange("idCategoria", id);
+          setTickCategorias((t) => t + 1);
+        }}
+      />
     </div>
   );
 }

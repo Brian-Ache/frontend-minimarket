@@ -35,13 +35,37 @@ export async function searchProductos(q: string): Promise<ProductoResponse[]> {
 }
 
 export async function getCategorias(): Promise<CategoriaResponse[]> {
-  const { data } = await api.get<PaginatedResponse<CategoriaResponse>>("/api/categorias/v1");
+  const { data } = await api.get<PaginatedResponse<CategoriaResponse>>("/api/categorias/v1?size=100");
   return data.content;
 }
 
 export async function getProveedores(): Promise<ProveedorResponse[]> {
-  const { data } = await api.get<PaginatedResponse<ProveedorResponse>>("/api/proveedores/v1");
+  const { data } = await api.get<PaginatedResponse<ProveedorResponse>>("/api/proveedores/v1?size=100");
   return data.content;
+}
+
+export async function crearCategoria(nombre: string, descripcion: string): Promise<CategoriaResponse> {
+  const { data } = await api.post<CategoriaResponse>("/api/categorias/v1", {
+    nombre,
+    descripcion: descripcion || null,
+  });
+  return data;
+}
+
+export async function modificarCategoria(
+  id: string,
+  nombre: string,
+  descripcion: string
+): Promise<CategoriaResponse> {
+  const { data } = await api.put<CategoriaResponse>(`/api/categorias/v1/${id}`, {
+    nombre,
+    descripcion: descripcion || null,
+  });
+  return data;
+}
+
+export async function eliminarCategoria(id: string): Promise<void> {
+  await api.delete(`/api/categorias/v1/${id}`);
 }
 
 export async function crearProducto(producto: CargaProductoRequest, idUsuario: string): Promise<ProductoResponse> {
@@ -62,6 +86,41 @@ export async function modificarProducto(id: string, producto: CargaProductoReque
 }
 
 //elimina un producto por su id (soft delete)
+export async function eliminarProveedor(id: string): Promise<void> {
+  await api.delete(`/api/proveedores/v1/${id}`);
+}
+
+export async function crearProveedor(
+  nombre: string,
+  telefono: string,
+  email: string,
+  direccion: string
+): Promise<ProveedorResponse> {
+  const { data } = await api.post<ProveedorResponse>("/api/proveedores/v1", {
+    nombre,
+    telefono: telefono || null,
+    email: email || null,
+    direccion: direccion || null,
+  });
+  return data;
+}
+
+export async function modificarProveedor(
+  id: string,
+  nombre: string,
+  telefono: string,
+  email: string,
+  direccion: string
+): Promise<ProveedorResponse> {
+  const { data } = await api.put<ProveedorResponse>(`/api/proveedores/v1/${id}`, {
+    nombre,
+    telefono: telefono || null,
+    email: email || null,
+    direccion: direccion || null,
+  });
+  return data;
+}
+
 export async function eliminarProducto(id: string): Promise<void> {
   await api.delete(`/api/productos/v1/${id}`);
 }
