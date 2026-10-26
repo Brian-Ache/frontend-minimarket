@@ -77,6 +77,174 @@ el mismo componente `Select` que el resto de la app.
 
 - `npx tsc --noEmit` y `npm run build` sin errores en los dos módulos.
 
+### Build de producción — `manualChunks` en `vite.config.ts`
+
+**Resumen**: el build tiraba `(!) Some chunks are larger than 500 kB after minification`:
+el JS entero salía en un solo chunk de 625 kB (191 kB gzip). Se agregó
+`build.rollupOptions.output.manualChunks` para separar los vendors del código de la app.
+
+- `vendor` (394 kB / 127 kB gzip): react, react-dom, react-router, radix-ui, lucide-react,
+  react-day-picker, clsx, tailwind-merge y el resto de node_modules.
+- `data-vendor` (77 kB / 26 kB gzip): axios, date-fns y `@tauri-apps/*`.
+- `index` (155 kB / 37 kB gzip): el código de la app. CSS sin cambios (58 kB).
+- Se probó primero con 3 chunks (`react-vendor` / `ui-vendor` / `data-vendor`) y Rollup
+  armó un ciclo `ui-vendor <-> react-vendor` (warning `Circular chunk` por símbolos
+  compartidos que quedan en otro chunk). Por eso react y UI quedaron juntos en `vendor`:
+  sin ciclos y con los dos warnings de build eliminados.
+- Verificado con `npm run build` limpio (cero warnings, 3.5 s).
+
+### Modal de Entradas (F7) — conectado a caja — `ModalEntrada.tsx`
+
+**Resumen**: el modal era 100% mock (`entradasMock` + fallback simulado de red). Ahora usa
+los endpoints reales de caja: lista los movimientos del turno y registra entradas en el
+backend.
+
+#### `src/services/cajaService.ts`
+
+- +`MovimientoCaja`: `{ id, idSesion, tipo, monto, motivo, origen, idReferencia, fecha }`.
+- +`getMovimientos(page, size)` → `GET /api/caja/v1/movimientos` (sin fechas = movimientos
+  del turno abierto, ordenados del más reciente al más viejo; `size=100`, máximo del backend).
+- +`registrarEntrada(monto, motivo)` → `POST /api/caja/v1/entradas`. El `idUsuario` lo saca
+  el backend del token; el body es `{ monto, motivo }` y el backend lo guarda en
+  `movimientos_caja` con `tipo=ENTRADA`, `origen=MANUAL`, `id_sesion` del turno abierto.
+- Reutiliza `PaginatedResponse<T>` y devuelve `data.content`.
+
+#### `src/components/venta/Modals/ModalEntrada.tsx`
+
+- **Borrado el mock completo**: `EntradaHecha`, `entradasMock`, `obtenerEntradasDesdeBD`
+  y el fallback BD→mock. El `export entradasMock` no lo usaba ningún otro archivo (el de
+  `corte/Entradas.tsx` es un mock propio).
+- Carga al abrir el modal: `getMovimientos()` → se quedan solo los `tipo === "ENTRADA"`
+  (ventas + entradas manuales; las salidas viven en F8). El filtro es en el cliente porque
+  el GET no tiene filtro por tipo.
+- `enviarEntrada()` ahora valida `monto > 0` (igual que `@Positive` del backend) y motivo
+  no vacío, llama a `registrarEntrada()` y agrega la respuesta del POST al inicio de la
+  lista (el backend ya devuelve id, fecha, origen y monto armados). Sin `alert`, sin cerrar
+  el modal.
+- Errores en rojo via `response.data.error` (patrón de `ModalProveedores`): "No hay sesión
+  activa…", "El monto debe ser mayor a 0", "El turno de caja ya está cerrado…".
+- Estados: `cargando` ("Cargando entradas..."), `guardando` (botón "Guardando..." +
+  Enter deshabilitado), vacío ("No hay entradas en este turno.").
+- Tabla: `Fecha` (dd/MM HH:mm — el turno puede cruzar medianoche) | `Origen`
+  (VENTA/MANUAL, para distinguir de dónde entró la plata; en las ventas `motivo` es null)
+  | `Motivo` (null → `—`) | `Valor` en verde.
+- Props `open/setOpen/onFocusBarcode` sin cambios: `BotonesAccion.tsx` no se tocó.
+
+#### Verificación
+
+- `npx tsc --noEmit` y `npm run build` sin errores ni warnings.
+
+### Modal de Salidas (F8) — conectado a caja — `ModalSalidas.tsx`
+
+**Resumen**: el modal era solo dos inputs con `alert("Se retiro:" + valor)` y un botón
+"Registro Salidas" sin handler — ni tabla ni persistencia. Ahora registra salidas reales y
+lista los movimientos del turno.
+
+#### `src/services/cajaService.ts`
+
+- +`registrarSalida(monto, motivo)` → `POST /api/caja/v1/salidas` (mismo body que entradas:
+  `{ monto, motivo }`; el backend lo guarda en `movimientos_caja` con `tipo=SALIDA`,
+  `origen=MANUAL`).
+- **Sin validación de saldo en el cliente**: el chequeo de efectivo disponible
+  (`monto <= saldoEsperado`) lo hace solo el backend en `CajaService.registrarSalidaManual`
+  y su mensaje ("No hay efectivo suficiente en la caja…") se muestra tal cual en rojo.
+
+#### `src/components/venta/Modals/ModalSalidas.tsx`
+
+- Carga al abrir: `getMovimientos()` **sin filtro de tipo** — lista todos los movimientos
+  del turno (entradas y salidas juntas).
+- Tabla con el mismo estilo que la del modal de entradas: `Fecha` (dd/MM HH:mm) | `Origen`
+  | `Motivo` (null → `—`) | `Valor` **verde si `tipo === "ENTRADA"`, rojo si `SALIDA"`**
+  (sin columna Tipo: el color es el que distingue).
+- `enviarSalida()` valida `monto > 0` y motivo obligatorio, llama a `registrarSalida()` y
+  agrega la respuesta del POST al inicio de la lista. El modal **queda abierto** tras
+  registrar (consistente con el de entradas). Sin `alert`.
+- Errores en rojo via `response.data.error`, estados `Cargando movimientos...` /
+  `No hay movimientos en este turno.`, botón `Guardando...` con Enter deshabilitado.
+- Normalización: `<input>` crudo → `<Input>` de shadcn, `onOpenChange={handleOpenChange}`
+  (vuelve el foco al barcode al cancelar) y se eliminó el botón muerto "Registro Salidas".
+- `DialogTitle` "Salida de Dinero" y props sin cambios: `BotonesAccion.tsx` no se tocó.
+
+#### Verificación
+
+- `npx tsc --noEmit` y `npm run build` sin errores ni warnings.
+
+### Módulo de Corte — conectado a caja y ventas — `components/corte/`
+
+**Resumen**: `pageCorte.tsx` y sus 4 hijos eran 100% mock (fecha hardcodeada a 2026-07-20,
+KPIs/métodos de pago/listas inventados, botón "Cortar Caja" vacío). Ahora todo sale de la API
+y el cierre de caja funciona desde la misma pantalla.
+
+#### Servicios
+
+- `cajaService.ts`:
+  - +`ResumenCaja` (`saldoInicial`, `totalVentas`/`cantidadVentas`, `totalCompras`/`cantidadCompras`,
+    `totalEntradasManuales`, `totalSalidasManuales`, `saldoEsperado`; los `Float`/`Integer` del
+    backend pueden venir `null` en cortes cerrados antes del desglose).
+  - +`getResumenDiario(fecha)` → `GET /api/caja/v1/resumen/diario?fecha=` — funciona para hoy
+    e histórico aunque no haya caja abierta.
+  - +`getMovimientosPorRango(desde, hasta)` → `GET /api/caja/v1/movimientos` con fechas ISO
+    naive locales (sin Z, convención del repo).
+- **`src/services/ventaService.ts` (nuevo)** (no existía service HTTP de ventas):
+  - +`getVentasPorFecha(desde, hasta)` → `GET /api/ventas/v1/fecha` (con `detalles` embebidos).
+  - +`getResumenDiarioVentas(fecha)` → `GET /api/ventas/v1/resumen/diario` (efectivo/tarjeta/transferencia).
+
+#### `corte/fechas.ts` (nuevo)
+
+- `aFechaISO` (`YYYY-MM-DD` local), `rangoDelDia` (desde/hasta ISO naive; **semiabierto**
+  `[desde, hasta)`: `hasta` = día siguiente 00:00, igual que consultan los repositorios del
+  backend), `esHoy`.
+
+#### `corte/ModalCorteCaja.tsx` (nuevo) — cierre de caja compartido
+
+- Extraído del diálogo que vivía en `ConfiguracionPage.tsx`: al abrir busca la sesión activa
+  (`getSesionActiva()`: 404 → "No hay caja abierta para cerrar"), muestra datos de la sesión,
+  ingresa saldo real y confirma con `cerrarSesion(saldoReal, 0)`; notifica al padre vía `onCerrado`.
+- `ConfiguracionPage.tsx`: reemplaza ~90 líneas de estados + diálogo inline por
+  `<ModalCorteCaja onCerrado={() => { cerrar(); clearJustLoggedIn(); }} />` (comportamiento
+  de logout/navegación intacto).
+
+#### `corte/pageCorte.tsx`
+
+- Fecha por defecto `new Date()` (hoy, no el 2026-07-20 hardcodeado).
+- Estado `refresco` (contador) que baja a los 4 hijos y fuerza la recarga de datos.
+- Props `date` + `refresco` ahora reales (antes comentadas).
+- Botón "Cortar Caja" → abre `ModalCorteCaja`; tras cerrar: recarga de datos (el badge
+  "Cierre Histórico" / "Caja Cerrada" se calcula con `esHoy`).
+
+#### `corte/InfoBalance.tsx`
+
+- `getResumenDiario`: Fondo Inicial→`saldoInicial`, Ventas Brutas→`totalVentas`,
+  Total Entradas→`totalEntradasManuales` (verde), Total Salidas→`totalSalidasManuales` (rojo),
+  Total Caja→`saldoEsperado`. `null` (cortes viejos) → "—".
+- Botón "Mostrar ventas del día (N)" → nuevo `ModalVentasDelDia` (API).
+
+#### `corte/ModalVentasDelDia.tsx` (nuevo)
+
+- Ventas de **cualquier día** vía `GET /api/ventas/v1/fecha` (no el `ModalVentasDia` de SQLite,
+  que se queda como estaba para la página de ventas): lista tickets (hora, método de pago,
+  total, "sin cobrar") + detalle del seleccionado (nombre × cantidad, subtotal, total).
+- `size=200`; si llega al tope muestra "Se muestran las primeras 200 ventas del día".
+- El alcance (todas o solo las propias) lo decide el backend por rol.
+
+#### `corte/VentasPorTipo.tsx`
+
+- `getResumenDiarioVentas`: Efectivo / Posnet-Tarjetas / Transferencias-QR desde
+  `totalEfectivo`/`totalTarjeta`/`totalTransferencia`.
+- Eliminados los 3 bloques "Fiados / Cuenta Corriente" duplicados (error de mock; el backend
+  solo conoce `EFECTIVO|TARJETA|TRANSFERENCIA`).
+
+#### `corte/Entradas.tsx` / `corte/Salidas.tsx`
+
+- `getMovimientosPorRango` + filtro por `tipo` en el cliente (el GET no filtra).
+- Quitados los mocks y los botones "+ Entrada"/"+ Salida" (el corte es solo lectura; los
+  movimientos se registran desde la página de ventas).
+- Fila: hora (HH:mm) + motivo (`null` → "—") + monto con signo verde/rojo.
+
+#### Verificación
+
+- `npx tsc --noEmit` y `npm run build` sin errores ni warnings.
+
 ---
 
 ## 2026-09-30

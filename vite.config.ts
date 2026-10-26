@@ -37,5 +37,18 @@ export default defineConfig(async () => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("axios") || id.includes("date-fns") || id.includes("@tauri-apps")) {
+            return "data-vendor";
+          }
+          return "vendor";
+        },
+      },
+    },
+  },
 }));

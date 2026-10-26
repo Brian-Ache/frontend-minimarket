@@ -9,10 +9,15 @@ import InfoBalance from "./infoBalance";
 import VentasPorTipo from "./VentasPorTipo";
 import Salidas from "./Salidas";
 import Entradas from "./Entradas";
+import ModalCorteCaja from "./ModalCorteCaja";
+import { esHoy } from "./fechas";
 
 export default function PageCorte() {
-  // Estado local para la fecha seleccionada (por defecto la fecha actual)
-  const [selectedDate, setSelectedDate] = useState(new Date(2026, 6, 20)); // Mes 6 = Julio (0-indexed)
+  // Estado local para la fecha seleccionada (por defecto hoy)
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Contador para recargar los datos de los hijos tras cerrar la caja
+  const [refresco, setRefresco] = useState(0);
+  const [modalCorteAbierto, setModalCorteAbierto] = useState(false);
 
   // Formateador dinámico para la fecha
   const formatDate = (date: Date) => {
@@ -23,16 +28,6 @@ export default function PageCorte() {
       year: "numeric",
     });
     return text.charAt(0).toUpperCase() + text.slice(1);
-  };
-
-  // Comparador para saber si la fecha elegida es HOY
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
   };
 
   return (
@@ -46,7 +41,7 @@ export default function PageCorte() {
           </h1>
           
           {/* Badge informativo de histórico */}
-          {!isToday(selectedDate) && (
+          {!esHoy(selectedDate) && (
             <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
               Cierre Histórico
             </span>
@@ -78,9 +73,9 @@ export default function PageCorte() {
           </Popover>
 
           {/* BOTÓN CORTAR CAJA (Solo visible o activo si es HOY) */}
-          {isToday(selectedDate) ? (
+          {esHoy(selectedDate) ? (
             <Button
-              onClick={() => {/* Lógica para ejecutar el corte de caja */}}
+              onClick={() => setModalCorteAbierto(true)}
               className="h-8 px-3 text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm transition-colors rounded-lg"
             >
               Cortar Caja
@@ -97,18 +92,25 @@ export default function PageCorte() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:flex-1 md:min-h-0 md:overflow-hidden">
 
         {/* Columna 1: KPIs */}
-        <InfoBalance /*date={selectedDate}*/ />
+        <InfoBalance date={selectedDate} refresco={refresco} />
 
         {/* Columna 2: Métodos de Pago */}
-        <VentasPorTipo /*date={selectedDate}*/ />
+        <VentasPorTipo date={selectedDate} refresco={refresco} />
 
         {/* Columna 3: Salidas + Entradas */}
         <div className="flex flex-col gap-3 min-h-0">
-          <Salidas /*date={selectedDate}*/ />
-          <Entradas /*date={selectedDate}*/ />
+          <Salidas date={selectedDate} refresco={refresco} />
+          <Entradas date={selectedDate} refresco={refresco} />
         </div>
 
       </div>
+
+      {/* Modal de cierre de caja — componente compartido con Configuración */}
+      <ModalCorteCaja
+        open={modalCorteAbierto}
+        onOpenChange={setModalCorteAbierto}
+        onCerrado={() => setRefresco((r) => r + 1)}
+      />
     </div>
   );
 }

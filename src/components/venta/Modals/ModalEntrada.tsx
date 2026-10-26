@@ -11,53 +11,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// 1. TIPO DE DATOS DEFINIDO
-type EntradaHecha = {
-    id : string;
-    motivo : string;
-    valor : number;
-    fecha : Date;
-};
+import {
+  getMovimientos,
+  registrarEntrada,
+  type MovimientoCaja,
+} from "@/services/cajaService";
 
-// 2. DATOS MOCK DE ENTRADAS (Con horas exactas)
-export const entradasMock: EntradaHecha[] = [
-    { 
-        id: "ent-001", 
-        motivo: "Sueldo mensual", 
-        valor: 2500, 
-        fecha: new Date("2026-06-01T09:30:00") 
-    },
-    { 
-        id: "ent-002", 
-        motivo: "Pago suscripción streaming", 
-        valor: 15, 
-        fecha: new Date("2026-06-02T14:15:22") 
-    },
-    { 
-        id: "ent-003", 
-        motivo: "Venta de monitor usado", 
-        valor: 200, 
-        fecha: new Date("2026-06-04T18:45:00") 
-    },
-];
+const mensajeDeError = (err: unknown): string =>
+  (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+  "No se pudo procesar la entrada";
 
-// 3. CONTROLADOR/SERVICIO PARA TRAER DATOS (Simula petición a Base de Datos)
-const obtenerEntradasDesdeBD = async (): Promise<EntradaHecha[]> => {
-    // Para probar el flujo de error y ver cómo carga el Mock, cambia esta variable a 'true'
-    const forzarFalloDeBaseDeDatos = false; 
-
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            if (forzarFalloDeBaseDeDatos) {
-                reject(new Error("No se pudo conectar a la BD"));
-            } else {
-                // Aquí iría tu fetch real. Ej: fetch('/api/entradas')
-                // Simulamos que la BD devuelve datos reales (en este ejemplo vacíos para disparar el fallback)
-                const datosDeBD: EntradaHecha[] = []; 
-                resolve(datosDeBD);
-            }
-        }, 1000); // Demora de red simulada de 1 segundo
-    });
+const formatFecha = (fecha: string): string => {
+  const f = new Date(fecha);
+  return `${f.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" })} ${f.toLocaleTimeString(
+    "es-ES",
+    { hour: "2-digit", minute: "2-digit", hour12: false }
+  )}`;
 };
 
 interface ModalEntradaProps {
@@ -73,8 +42,10 @@ export default function ModalEntrada({
 }: ModalEntradaProps){
     const [valorEntrada, setValorEntrada] = useState<number>(0);
     const [mensaje, setMensaje] = useState<string>("");
-    const [entradasHechas, setEntradasHechas] = useState<EntradaHecha[]>([]);
+    const [entradas, setEntradas] = useState<MovimientoCaja[]>([]);
     const [cargando, setCargando] = useState<boolean>(false);
+    const [guardando, setGuardando] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Centralizamos el cierre del modal aquí
     const handleOpenChange = (isOpen: boolean) => {
@@ -86,56 +57,50 @@ export default function ModalEntrada({
         }
     };
 
-    // 4. LÓGICA DE CARGA CON FALLBACK (BD -> MOCK)
+    // Movimientos del turno abierto (GET /api/caja/v1/movimientos), solo tipo ENTRADA
     useEffect(() => {
-        if (!open) return; // Solo buscar datos si el modal se abre
+        if (!open) return;
 
         setCargando(true);
-        obtenerEntradasDesdeBD()
-            .then((datos) => {
-                // Si la BD se conectó pero está vacía, usamos el Mock por seguridad.
-                if (datos.length === 0) {
-                    console.log("BD vacía. Cargando datos Mock de respaldo.");
-                    setEntradasHechas(entradasMock);
-                } else {
-                    setEntradasHechas(datos);
-                }
-            })
-            .catch((error) => {
-                console.warn(`${error.message}. Usando el Mock financiero automáticamente.`);
-                setEntradasHechas(entradasMock);
-            })
-            .finally(() => {
-                setCargando(false);
-            });
+        setError(null);
+        getMovimientos()
+            .then((movimientos) =>
+                setEntradas(movimientos.filter((m) => m.tipo === "ENTRADA"))
+            )
+            .catch((err) => setError(mensajeDeError(err)))
+            .finally(() => setCargando(false));
     }, [open]);
 
-    // Función para enviar entradas con Hora Exacta incorporada
-    const enviarEntrada = (valor: number, motivo: string) => {
-        if (!motivo.trim()) return alert("Por favor, ingresa un motivo");
+    // POST /api/caja/v1/entradas — el backend responde con el movimiento ya guardado
+    const enviarEntrada = async (valor: number, motivo: string) => {
+        if (guardando) return;
+        if (!Number.isFinite(valor) || valor <= 0) {
+            setError("El monto debe ser mayor a 0");
+            return;
+        }
+        if (!motivo.trim()) {
+            setError("Ingresá un motivo para la entrada");
+            return;
+        }
 
-        const nuevaEntrada: EntradaHecha = {
-            id: crypto.randomUUID(), // ID Autogenerado único en el cliente
-            motivo: motivo,
-            valor: valor,
-            fecha: new Date() // <--- CAPTURA LA HORA EXACTA ACTUAL
-        };
-
-        // Guardamos de forma reactiva local
-        setEntradasHechas(prev => [nuevaEntrada, ...prev]);
-        
-        alert(`Se ingresó: ${motivo} ($${valor})`);
-        
-        // Limpiamos los inputs
-        setValorEntrada(0);
-        setMensaje("");
-        //handleOpenChange(false);
+        setError(null);
+        setGuardando(true);
+        try {
+            const movimiento = await registrarEntrada(valor, motivo.trim());
+            setEntradas((prev) => [movimiento, ...prev]);
+            setValorEntrada(0);
+            setMensaje("");
+        } catch (err) {
+            setError(mensajeDeError(err));
+        } finally {
+            setGuardando(false);
+        }
     };
 
     // MANEJO DE MODAL CON TECLA Enter
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (!open) return;
+            if (!open || guardando) return;
         
             if (e.key === "Enter") {
                 enviarEntrada(valorEntrada, mensaje);
@@ -143,7 +108,7 @@ export default function ModalEntrada({
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [open, valorEntrada, mensaje]); // Quitamos funciones de las dependencias para evitar bucles repetitivos
+    }, [open, valorEntrada, mensaje, guardando]);
 
     return(
         <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -168,39 +133,42 @@ export default function ModalEntrada({
                     />
                 </div>
 
-                {/* 5. TABLA DE REGISTROS RENDERIZADA */}
+                {error && (
+                    <p className="text-sm text-red-600">{error}</p>
+                )}
+
+                {/* Tabla de entradas del turno — GET /api/caja/v1/movimientos */}
                 <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-md mt-4">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-100 sticky top-0 shadow-sm z-10">
                             <tr>
-                                <th className="p-2 text-slate-600 font-semibold w-1/3">Hora</th>
-                                <th className="p-2 text-slate-600 font-semibold w-1/3">Motivo</th>
-                                <th className="p-2 text-slate-600 font-semibold w-1/3 text-right">Valor</th>
+                                <th className="p-2 text-slate-600 font-semibold w-1/4">Fecha</th>
+                                <th className="p-2 text-slate-600 font-semibold w-1/4">Origen</th>
+                                <th className="p-2 text-slate-600 font-semibold w-1/4">Motivo</th>
+                                <th className="p-2 text-slate-600 font-semibold w-1/4 text-right">Valor</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-normal text-slate-700">
                             {cargando ? (
                                 <tr>
-                                    <td colSpan={3} className="text-center p-4 text-slate-400">Sincronizando flujos...</td>
+                                    <td colSpan={4} className="text-center p-4 text-slate-400">Cargando entradas...</td>
                                 </tr>
-                            ) : entradasHechas.length === 0 ? (
+                            ) : entradas.length === 0 ? (
                                 <tr>
-                                    <td colSpan={3} className="text-center p-4 text-slate-400">No hay registros aún.</td>
+                                    <td colSpan={4} className="text-center p-4 text-slate-400">No hay entradas en este turno.</td>
                                 </tr>
                             ) : (
-                                entradasHechas.map((entrada) => (
+                                entradas.map((entrada) => (
                                     <tr key={entrada.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="p-2 text-xs text-slate-500">
-                                            {entrada.fecha.toLocaleString("es-ES", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                                
-                                                hour12: false
-                                            })}
+                                            {formatFecha(entrada.fecha)}
                                         </td>
-                                        <td className="p-2 font-medium">{entrada.motivo}</td>
+                                        <td className="p-2 text-xs text-slate-500 capitalize">
+                                            {entrada.origen}
+                                        </td>
+                                        <td className="p-2 font-medium">{entrada.motivo ?? "—"}</td>
                                         <td className={`p-2 text-right font-semibold text-green-600`}>
-                                            ${entrada.valor}
+                                            ${entrada.monto}
                                         </td>
                                     </tr>
                                 ))
@@ -211,7 +179,12 @@ export default function ModalEntrada({
 
                 <DialogFooter className="mt-4">
                     <Button variant="outline" onClick={() => handleOpenChange(false)}>Cancelar</Button>
-                    <Button onClick={() => enviarEntrada(valorEntrada, mensaje)}>Aceptar</Button>
+                    <Button
+                        disabled={guardando}
+                        onClick={() => enviarEntrada(valorEntrada, mensaje)}
+                    >
+                        {guardando ? "Guardando..." : "Aceptar"}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
