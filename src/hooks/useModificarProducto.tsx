@@ -28,7 +28,7 @@ import { useAuth } from "@/context/AuthContext";
 import { modificarProducto, controlarStock, eliminarProducto } from "@/services/productoService";
 import { getCategorias, getProveedores } from "@/services/productoService";
 import type { ProductoResponse } from "@/types/response/productoResponse";
-import type { CargaProductoRequest } from "@/types/request/CargaProductoRequest";
+import type { ModificarProductoRequest } from "@/types/request/modificarProductoRequest";
 import type { CategoriaResponse } from "@/types/response/categoriaResponse";
 import type { ProveedorResponse } from "@/types/response/proveedorResponse";
 
@@ -79,7 +79,7 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
     }
   }, [producto, stockInicial]);
 
-  const handleChange = (field: keyof CargaProductoRequest, value: string | number | boolean) => {
+  const handleChange = (field: keyof ModificarProductoRequest, value: string | number | boolean) => {
     if (field === "costo") setModalCosto(Number(value));
     else if (field === "margen") setModalMargen(Number(value));
     else if (field === "nombre") setModalNombre(value as string);
@@ -104,14 +104,17 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
         costo: modalCosto,
         margen: modalMargen,
         idCategoria: modalCategoriaId,
-        idProveedor: modalProveedorId,
+        idProveedor: modalProveedorId,  
       });
 
       if (modalCantidad !== stockInicial) {
-        if (!user) { setModalError("No hay usuario autenticado"); return; }
+        if (!user) {
+          setModalError("No hay usuario autenticado");
+          return;
+        }
+
         await controlarStock(producto.id, modalCantidad, user.id);
       }
-
       onRefresh?.();
     } catch (err: any) {
       setModalError(err.response?.data?.message || "Error al modificar producto");

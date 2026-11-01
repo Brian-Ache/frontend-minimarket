@@ -5,7 +5,7 @@ import type { CategoriaResponse } from "@/types/response/categoriaResponse";
 import type { ProveedorResponse } from "@/types/response/proveedorResponse";
 import type { ProductoFiltros } from "@/types/request/productoFiltrosRequest";
 import type { CargaProductoRequest } from "@/types/request/CargaProductoRequest";
-
+import type { ModificarProductoRequest } from "@/types/request/modificarProductoRequest";
 
 export async function getProductos(filtros: ProductoFiltros = {}): Promise<PaginatedResponse<ProductoResponse>> {
   const params = new URLSearchParams();
@@ -80,8 +80,14 @@ export async function crearProducto(producto: CargaProductoRequest, idUsuario: s
 }
 
 //modifica caualquier campo del producto menos el stock
-export async function modificarProducto(id: string, producto: CargaProductoRequest): Promise<ProductoResponse> {
-  const { data } = await api.put<ProductoResponse>(`/api/productos/v1/${id}`, producto);
+export async function modificarProducto(
+  id: string,
+  producto: ModificarProductoRequest
+): Promise<ProductoResponse> {
+  const { data } = await api.put<ProductoResponse>(
+    `/api/productos/v1/${id}`,
+    producto
+  );
   return data;
 }
 
