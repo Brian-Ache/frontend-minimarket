@@ -42,6 +42,7 @@ const initialState: CargaProductoRequest = {
   margen: 0,
   idCategoria: null,
   idProveedor: null,
+  cantidadInicial: 0,
 };
 
 // Declara la función del Hook personalizado.
