@@ -59,14 +59,14 @@ export default function ModalSalida({
     }
   };
 
-    // Todos los movimientos del turno (GET /api/caja/v1/movimientos), sin filtro de tipo
+    // Movimientos del turno (GET /api/caja/v1/movimientos), solo tipo SALIDA
     useEffect(() => {
         if (!open) return;
 
         setCargando(true);
         setError(null);
         getMovimientos()
-            .then(setMovimientos)
+            .then((movs) => setMovimientos(movs.filter((m) => m.tipo === "SALIDA")))
             .catch((err) => setError(mensajeDeError(err)))
             .finally(() => setCargando(false));
     }, [open]);
@@ -138,8 +138,7 @@ export default function ModalSalida({
                     <p className="text-sm text-red-600">{error}</p>
                 )}
 
-                {/* Movimientos del turno — GET /api/caja/v1/movimientos; el color del
-                    monto distingue ENTRADA (verde) de SALIDA (rojo) */}
+                {/* Salidas del turno — GET /api/caja/v1/movimientos filtrado a SALIDA */}
                 <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-md mt-4">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-100 sticky top-0 shadow-sm z-10">
@@ -153,11 +152,11 @@ export default function ModalSalida({
                         <tbody className="divide-y divide-slate-100 font-normal text-slate-700">
                             {cargando ? (
                                 <tr>
-                                    <td colSpan={4} className="text-center p-4 text-slate-400">Cargando movimientos...</td>
+                                    <td colSpan={4} className="text-center p-4 text-slate-400">Cargando salidas...</td>
                                 </tr>
                             ) : movimientos.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="text-center p-4 text-slate-400">No hay movimientos en este turno.</td>
+                                    <td colSpan={4} className="text-center p-4 text-slate-400">No hay salidas en este turno.</td>
                                 </tr>
                             ) : (
                                 movimientos.map((mov) => (

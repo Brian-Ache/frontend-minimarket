@@ -89,13 +89,13 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
         </Select>
       </div>
 
-      <div className="col-span-1 flex items-center">
+      {/* <div className="col-span-1 flex items-center">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={form.manejaLotes}
             onChange={(e) => handleChange("manejaLotes", e.target.checked)} />
           <span className="text-sm text-slate-600">Maneja lotes</span>
         </label>
-      </div>
+      </div> */}
 
       <div className="col-span-1 flex items-end justify-between gap-2">
         <Button className="bg-emerald-600 text-white" onClick={handleGuardar} disabled={loading}>
