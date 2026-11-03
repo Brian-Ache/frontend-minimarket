@@ -104,7 +104,8 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
         costo: modalCosto,
         margen: modalMargen,
         idCategoria: modalCategoriaId,
-        idProveedor: modalProveedorId,  
+        idProveedor: modalProveedorId,
+        cantidadInicial: 0  
       });
 
       if (modalCantidad !== stockInicial) {

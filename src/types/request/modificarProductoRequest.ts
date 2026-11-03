@@ -7,4 +7,5 @@ export interface ModificarProductoRequest {
   margen: number;
   idCategoria: string | null;
   idProveedor: string | null;
+  cantidadInicial: number;
 }
