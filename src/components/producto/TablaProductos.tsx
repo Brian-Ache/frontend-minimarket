@@ -14,7 +14,7 @@
  * todo el estado y la lógica del formulario, incluyendo la actualización
  * de stock vía el endpoint POST /api/inventario/v1/controlar.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [openModal, setOpenModal] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Historial de proveedores
   const [openHistorial, setOpenHistorial] = useState(false);
@@ -107,6 +108,21 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
     setSelectedIndex(0);
   }, [search, categoriaId, proveedorId, productos]);
 
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const row = container.querySelector<HTMLElement>(`tbody tr[data-index="${selectedIndex}"]`);
+    if (!row) return;
+    const header = container.querySelector<HTMLElement>("thead");
+    const headerH = header?.offsetHeight ?? 0;
+    const cRect = container.getBoundingClientRect();
+    const rRect = row.getBoundingClientRect();
+    if (rRect.top < cRect.top + headerH) {
+      container.scrollTop += rRect.top - cRect.top - headerH;
+    } else if (rRect.bottom > cRect.bottom) {
+      container.scrollTop += rRect.bottom - cRect.bottom;
+    }
+  }, [selectedIndex]);
   useEffect(() => {
     if (productos.length === 0) {
       setStockMap(new Map());
@@ -234,7 +250,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
       </div>
 
       {/* Tabla de productos */}
-      <div className="flex-1 overflow-auto">
+      <div ref={scrollRef} className="flex-1 overflow-auto">
         {loading ? (
           <div className="p-4 text-center text-slate-500">Cargando productos...</div>
         ) : error ? (
@@ -256,6 +272,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
               {productos.map((prod, index) => (
                 <tr
                   key={prod.id}
+                  data-index={index}
                   onClick={() => {
                     if (index === selectedIndex) {
                       setOpenModal(true);
