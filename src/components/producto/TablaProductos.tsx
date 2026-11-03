@@ -256,6 +256,13 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
               {productos.map((prod, index) => (
                 <tr
                   key={prod.id}
+                  onClick={() => {
+                    if (index === selectedIndex) {
+                      setOpenModal(true);
+                    } else {
+                      setSelectedIndex(index);
+                    }
+                  }}
                   className={`
                     border-t border-border cursor-pointer
                     ${index === selectedIndex ? "bg-blue-100" : "hover:bg-slate-50"}
