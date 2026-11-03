@@ -137,20 +137,34 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
 
   // Navegacion teclado
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isInputFocused = document.activeElement?.tagName === "INPUT";
+    const isControlBlocked = (target: EventTarget | null) => {
+      const check = (el: Element | null) => {
+        if (!el) return false;
+        const tag = el.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON") return true;
+        return !!el.closest('[role="listbox"], [role="dialog"], [data-radix-popper-content-wrapper]');
+      };
+      if (check(document.activeElement)) return true;
+      if (target instanceof Element && check(target)) return true;
+      return !!document.querySelector(
+        '[data-slot="select-content"][data-state="open"], [role="dialog"][data-state="open"]'
+      );
+    };
 
-      if (e.key === "ArrowDown" && !isInputFocused) {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const blocked = isControlBlocked(e.target);
+
+      if (e.key === "ArrowDown" && !blocked) {
         e.preventDefault();
         setSelectedIndex((prev) => Math.min(prev + 1, productos.length - 1));
       }
 
-      if (e.key === "ArrowUp" && !isInputFocused) {
+      if (e.key === "ArrowUp" && !blocked) {
         e.preventDefault();
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
       }
 
-      if (e.key === "Enter" && productos.length > 0) {
+      if (e.key === "Enter" && productos.length > 0 && !blocked) {
         setOpenModal(true);
       }
 
