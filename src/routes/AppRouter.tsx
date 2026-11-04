@@ -6,12 +6,14 @@ import Corte from "../pages/Corte";
 import Reportes from "../pages/Reportes";
 import Configuracion from "../pages/Configuracion";
 import Login from "../pages/Login";
+import Invitacion from "../pages/Invitacion";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 export default function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/invitacion" element={<Invitacion />} />
 
       <Route path="/" element={<ProtectedRoute><Venta /></ProtectedRoute>} />
       <Route path="/productos" element={<ProtectedRoute><Productos /></ProtectedRoute>} />

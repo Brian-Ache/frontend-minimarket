@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (usuario: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await api.post<LoginResponse>("/api/auth/v1/login", { username: usuario, password });
       localStorage.setItem("token", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(data.usuario));
       setToken(data.accessToken);
       setUser(data.usuario);
@@ -55,9 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  // Cierra la sesión solo si el backend confirmó (revoca el refresh). Sin internet o con
+  // el backend caído lanza SIN_CONEXION y NO se limpia nada local.
+  const logout = async (): Promise<void> => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    try {
+      // Sesiones viejas sin refreshToken guardado: no hay nada que revocar.
+      if (refreshToken) {
+        await api.post("/api/auth/v1/logout", { refreshToken });
+      }
+    } catch {
+      throw new Error("SIN_CONEXION");
+    }
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("refreshToken");
     setToken(null);
     setUser(null);
     setJustLoggedIn(false);

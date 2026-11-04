@@ -26,10 +26,13 @@ import ModalAbrirCaja from "./components/caja/ModalAbrirCaja";
 function AppLayout() {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
+  // El invitado todavía no tiene sesión: la barra no tiene nada que mostrarle.
+  const isInvitacionPage = location.pathname === "/invitacion";
+  const hideNavbar = isLoginPage || isInvitacionPage;
 
   return (
     <div className="w-screen h-screen flex flex-col overflow-hidden">
-      {!isLoginPage && (
+      {!hideNavbar && (
         <div className="shrink-0">
           <Navbar />
         </div>

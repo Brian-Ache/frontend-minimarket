@@ -1,5 +1,127 @@
 # Changelog Frontend
 
+## 2026-11-04
+
+---
+
+### Tabla de productos — El teclado dejó de robarle los eventos a los Select
+
+**Resumen**: al interactuar con los selects de categoría/proveedor, las flechas y el Enter
+también movían la tabla de productos y abrían el modal de modificar. La causa: el listener
+global de `keydown` de la tabla solo chequeaba `document.activeElement?.tagName === "INPUT"`,
+y el trigger de los Select de Radix es un `<button>`.
+
+#### `src/components/producto/TablaProductos.tsx`
+
+- Guard nuevo `isControlBlocked(target)`, chequea tres fuentes:
+  - `document.activeElement` / `e.target`: tag `INPUT|TEXTAREA|SELECT|BUTTON` o
+    `closest('[role="listbox"], [role="dialog"], [data-radix-popper-content-wrapper]')`.
+  - Select/Dialog abierto en el DOM:
+    `[data-slot="select-content"][data-state="open"], [role="dialog"][data-state="open"]`.
+- Aplica a `ArrowDown`, `ArrowUp` y `Enter` (el Enter no tenía ningún guard y abría el
+  modal desde cualquier lado). `Escape` queda sin guard.
+- El chequeo por `e.target` cubre el caso en que Radix ya cerró el portal y devolvió el
+  foco a `body` antes de que corra el listener en `window`.
+
+### Tabla de productos — Navegación con flechas y touch en celular
+
+**Resumen**: el scroll no acompañaba a la selección con las flechas, y en celular no
+existía forma de abrir el modal de modificar (no hay tecla Enter).
+
+#### `src/components/producto/TablaProductos.tsx`
+
+- **Scroll que sigue a la selección**: nuevo `scrollRef` en el contenedor
+  `flex-1 overflow-auto` + `data-index` en cada `<tr>`. El `useEffect` de `selectedIndex`
+  calcula a mano con `getBoundingClientRect()`:
+  - fila arriba del header sticky → `scrollTop` ajustado dejando libre el `thead`;
+  - fila abajo del contenedor → se trae a la vista;
+  - ya visible → no hace nada (sin salto).
+  - Reemplaza al `scrollIntoView({ block: "nearest" })`, que alineaba la fila con el borde
+    del contenedor y la dejaba **debajo** del header sticky (visualmente parecía que el
+    selector subía una fila de más).
+- **Doble tap en celular**: `onClick` en cada fila — si la fila ya está seleccionada
+  (`index === selectedIndex`) abre el modal de modificar; si no, la selecciona (pinta de
+  azul). En desktop no cambia: clic selecciona, Enter sigue abriendo el modal.
+
+### Modal de Salidas — lista solo salidas
+
+**Resumen**: `ModalSalidas` traía **todos** los movimientos del turno (entradas y salidas
+juntas) porque no filtraba por tipo.
+
+#### `src/components/venta/Modals/ModalSalidas.tsx`
+
+- `getMovimientos().then((movs) => setMovimientos(movs.filter((m) => m.tipo === "SALIDA")))`
+  — mismo patrón que `ModalEntrada.tsx`. El filtro es en el cliente porque el GET no tiene
+  filtro por tipo.
+- Textos ajustados: "Cargando salidas..." / "No hay salidas en este turno." (antes
+  decían "movimientos").
+
+> Nota: `GET /api/caja/v1/movimientos` sin fechas devuelve los de la **sesión abierta**
+> (turno), no los del día calendario. Para "del día" hay que usar
+> `getMovimientosPorRango()`.
+
+### Formulario de productos — Comentario de la checkbox "Maneja lotes"
+
+#### `src/components/producto/FormProducto.tsx`
+
+- El bloque de la checkbox `manejaLotes` (líneas 92-98) quedó comentado con `{/* */}`.
+  El checkbox del modal de modificación (`TablaProductos`) no se tocó.
+
+### Cola de eventos SQLite — Modal de solo lectura en Configuración
+
+**Resumen**: no existía forma de ver la cola `evento_cola` (SQLite) desde la UI; solo se
+leían los eventos `PENDIENTE` vía `getEventosPendientes()`.
+
+#### `src/services/venta/sqliteService.ts`
+
+- +`getEventosCola()` → `SELECT * FROM evento_cola ORDER BY creado_en DESC`: **todos** los
+  estados (`PENDIENTE | ENVIADO | ERROR`), para debug/lectura.
+
+#### `src/components/configuracion/modals/ModalEventosCola.tsx` (NUEVO)
+
+- Modal de solo lectura (patrón `registrarUsModal`: props `open`/`onOpenChange`), carga al
+  abrir con `useEffect [open]`.
+- Tabla: Fecha | Tipo | Estado (badge: PENDIENTE ámbar / ENVIADO verde / ERROR rojo) |
+  Intentos | UUID truncado (tooltip con el completo) | Último error.
+- Estados de carga/vacío + botones "Refrescar" y "Cerrar". **Sin acciones de sync**.
+
+#### `src/components/configuracion/ConfiguracionPage.tsx`
+
+- +estado `modalEventosAbierto` + botón `variant="secondary"` **"Ver cola de eventos"**
+  junto a "Sincronizar productos", y render del modal al final.
+
+### Compra — Fix 400 `pagoEnEfectivo: Cannot map null into type boolean`
+
+**Resumen**: al guardar una compra el backend respondía
+`Error al interpretar JSON: Cannot map null into type boolean ... CompraRequest["pagoEnEfectivo"]`.
+El DTO tiene `private boolean pagoEnEfectivo;` (primitivo, no acepta `null`) y el front no
+mandaba el campo. Decisión: **no tocar el backend**; el front lo manda explícito.
+
+#### `src/services/compraService.ts`
+
+- `CompraRequest`: +`pagoEnEfectivo?: boolean;`, −`idSesion?: string | null;` (el DTO ya
+  no lo tiene; reemplazado por `pagoEnEfectivo` en el backend).
+
+#### `src/components/compra/NuevaCompra.tsx`
+
+- Payload: +`pagoEnEfectivo: false`.
+- Catch de `handleSendToBackend`: lee `err.response?.data.error` + `details.join(", ")`
+  (antes leía `data.message`, que el backend nunca manda → siempre mostraba el genérico
+  "Error al registrar la compra"). Ahora se ve el motivo real, p. ej.
+  "Validation failed — La compra debe tener al menos un detalle".
+
+#### Verificación
+
+- `npx tsc --noEmit` sin errores.
+
+### Pendiente actualizado — error de frontend al leer respuestas
+
+- `NuevaCompra.tsx` → ✅ resuelto (ver arriba, fix `pagoEnEfectivo`).
+- `HistorialCompras.tsx:120` → ⚠️ sigue leyendo `err.response?.data?.message`; cambiar a
+  `.error`.
+
+---
+
 ## 2026-10-13
 
 ---
@@ -845,12 +967,11 @@ La solución:
 
 ### Pendiente: Error de frontend al leer respuesta de error
 
-- **Estado (2026-10-13)**: ⚠️ sigue abierto — `NuevaCompra.tsx:111` y
-  `HistorialCompras.tsx:120` todavía leen `err.response?.data?.message`, pero el backend
-  responde `{ error, timestamp }`. Los modales nuevos (`ModalProveedores`,
-  `ModalCategorias`) ya leen `.error`.
+- **Estado (2026-11-04)**: ⚠️ parcial — `NuevaCompra.tsx` ya lee `.error` + `.details`
+  (fix del 2026-11-04). Sigue abierto `HistorialCompras.tsx:120` con
+  `err.response?.data?.message`.
 
-> `NuevaCompra.tsx` lee `err.response?.data?.message` pero el backend
+> `HistorialCompras.tsx` lee `err.response?.data?.message` pero el backend
 > devuelve `"error"` en el JSON. Corregir a `err.response?.data?.error`.
 
 ---
