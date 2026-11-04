@@ -14,6 +14,7 @@ type Compra = {
   tipoComprobante: string;
   nroComprobante: string;
   observaciones: string;
+  pagoEnEfectivo: boolean;
   items: {//cada item es un producto con su cantidad, costo y margen
     productoId: string;
     nombre: string;
@@ -47,6 +48,7 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
     tipoComprobante: "",
     nroComprobante: "",
     observaciones: "",
+    pagoEnEfectivo: false,
     items: [],
     total: 0,
   });
@@ -94,6 +96,7 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
         tipoComprobante: compra.tipoComprobante || null,
         nroComprobante: compra.nroComprobante || null,
         observaciones: compra.observaciones || null,
+        pagoEnEfectivo: false,
       });
 
       alert("Compra registrada exitosamente");
@@ -104,11 +107,14 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
         tipoComprobante: "",
         nroComprobante: "",
         observaciones: "",
+        pagoEnEfectivo: false,
         items: [],
         total: 0,
       });
     } catch (err: any) {
-      setError(err.response?.data?.message || "Error al registrar la compra");
+      const data = err.response?.data;
+      const detalle = Array.isArray(data?.details) ? data.details.join(", ") : "";
+      setError(data?.error ? `${data.error}${detalle ? ` — ${detalle}` : ""}` : "Error al registrar la compra");
     } finally {
       setLoading(false);
     }

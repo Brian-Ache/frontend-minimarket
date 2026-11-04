@@ -17,7 +17,7 @@ export interface CompraRequest {
   tipoComprobante?: string | null;
   nroComprobante?: string | null;
   observaciones?: string | null;
-  idSesion?: string | null;
+  pagoEnEfectivo?: boolean;
 }
 
 export interface CompraResponse {
