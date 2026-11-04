@@ -7,6 +7,7 @@ import { useSesion } from "@/context/SesionContext";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/input";
 import ModalCorteCaja from "@/components/corte/ModalCorteCaja";
+import ModalEventosCola from "./modals/ModalEventosCola";
 
 
 export default function ConfiguracionPage() {
@@ -19,6 +20,8 @@ export default function ConfiguracionPage() {
 
   // Estado para el modal de cierre de caja (componente compartido en components/corte)
   const [modalCorteAbierto, setModalCorteAbierto] = useState(false);
+  // [SQLite] Modal de solo lectura de la cola de eventos
+  const [modalEventosAbierto, setModalEventosAbierto] = useState(false);
 
   // Estado para abrir caja
   const [saldoInicial, setSaldoInicial] = useState("");
@@ -81,6 +84,12 @@ export default function ConfiguracionPage() {
         {mensajeSync && (
           <span className="text-sm text-slate-600">{mensajeSync}</span>
         )}
+        <Button
+          variant="secondary"
+          onClick={() => setModalEventosAbierto(true)}
+        >
+          Ver cola de eventos
+        </Button>
       </div>
       <Button
         className="m-2"
@@ -121,6 +130,11 @@ export default function ConfiguracionPage() {
       </Button>
 
       <RegistrarUsModal open={modalAbierto} onOpenChange={setModalAbierto} />
+
+      <ModalEventosCola
+        open={modalEventosAbierto}
+        onOpenChange={setModalEventosAbierto}
+      />
 
       {/* Modal de confirmación de cierre de caja — componente compartido con el Corte */}
       <ModalCorteCaja

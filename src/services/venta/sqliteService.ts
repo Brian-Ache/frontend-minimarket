@@ -324,6 +324,16 @@ export async function getEventosPendientes(): Promise<EventoCola[]> {
   return rows;
 }
 
+// [SQLite] Obtener todos los eventos de la cola (todos los estados) — debug/lectura
+export async function getEventosCola(): Promise<EventoCola[]> {
+  const db = await Database.load(DB_NAME);
+  const rows = await db.select<EventoCola[]>(
+    "SELECT * FROM evento_cola ORDER BY creado_en DESC"
+  );
+  await db.close();
+  return rows;
+}
+
 // [SQLite] Obtener detalle de un evento de la cola
 export async function getDetalleEventoCola(idEvento: string): Promise<DetalleTicketCola[]> {
   const db = await Database.load(DB_NAME);
