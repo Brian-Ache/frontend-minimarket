@@ -106,8 +106,14 @@ export default function FooterVenta({
             </Button>
             {/* [SQLite] Botón Cobrar conectado a la cola de tickets */}
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCobrar} disabled={!sesion}>
-              F12 - Cobrar
+              {!sesion && (
+                <>La caja no esta abierta para vender</>
+              )}
+              {sesion && (
+                <>F12 - Cobrar</>
+              )}
             </Button>
+            
           </div>
 
           {/*Simplificación: Usamos la prop 'total' directo, no hace falta un estado local duplicado */}

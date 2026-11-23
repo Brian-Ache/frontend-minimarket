@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 // [SQLite] Importar servicio de productos local
-import { getProductos } from "@/services/venta/sqliteService";
+import { getProductos as getProductosSqlite } from "@/services/venta/sqliteService";
+// [Nube] Fallback al backend cuando SQLite no está disponible (ej. navegador)
+import { getProductos as getProductosNube } from "@/services/productoService";
+import type { ProductoResponse } from "@/types/response/productoResponse";
 
 import {
   Dialog,
@@ -38,16 +41,89 @@ export default function ModalBuscarProducto({
   const [selectedIndex, setSelectedIndex] = useState(0);
   // [SQLite] Estado para productos cargados desde SQLite
   const [productos, setProductos] = useState<any[]>([]);
+  // [Nube] Modo fallback cuando SQLite falla (ej. fuera de Tauri)
+  const [modoNube, setModoNube] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const rowsRef = useRef<(HTMLTableRowElement | null)[]>([]);
 
-  // [SQLite] Cargar productos de SQLite cuando se abre el modal
+  // [SQLite] Cargar productos de SQLite cuando se abre el modal.
+  // Si SQLite falla (no es Tauri), activamos modoNube para consultar el backend.
   useEffect(() => {
-    if (open) {
-      getProductos().then(setProductos).catch(() => setProductos([]));
+    if (!open) {
+      setProductos([]);
+      setError(null);
+      setModoNube(false);
+      return;
     }
+
+    let cancelado = false;
+    setModoNube(false);
+    setLoading(true);
+    setError(null);
+
+    getProductosSqlite()
+      .then((data) => {
+        if (!cancelado) setProductos(data);
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setProductos([]);
+          setModoNube(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelado) setLoading(false);
+      });
+
+    return () => {
+      cancelado = true;
+    };
   }, [open]);
+
+  // [Nube] Búsqueda debounced contra el backend cuando SQLite no está disponible.
+  // Misma estrategia que el buscador del módulo Producto.
+  useEffect(() => {
+    if (!open || !modoNube) return;
+
+    let cancelado = false;
+    const timeout = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await getProductosNube({
+          page: 0,
+          size: 100,
+          q: busqueda.trim() || undefined,
+        });
+        if (!cancelado) {
+          setProductos(
+            response.content.map((p: ProductoResponse) => ({
+              id: p.id,
+              nombre: p.nombre,
+              barcode: p.barcode ?? "",
+              precio: p.precio,
+              cantidad: 1,
+            }))
+          );
+        }
+      } catch (err: any) {
+        if (!cancelado) {
+          setProductos([]);
+          setError(err.response?.data?.message || "Error al buscar productos");
+        }
+      } finally {
+        if (!cancelado) setLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      cancelado = true;
+      clearTimeout(timeout);
+    };
+  }, [open, modoNube, busqueda]);
 
   ////////////////////////////////////////////////////////////////////////////////
   //FILTRO DE BUSQUEDA POR NOMBRE DE PRODUCTO
@@ -198,10 +274,18 @@ export default function ModalBuscarProducto({
               </tbody>
             </table>
 
-            {productosFiltrados.length === 0 && (
+            {loading ? (
               <div className="p-4 text-center text-muted-foreground">
-                No se encontraron productos.
+                Buscando productos...
               </div>
+            ) : error ? (
+              <div className="p-4 text-center text-destructive">{error}</div>
+            ) : (
+              productosFiltrados.length === 0 && (
+                <div className="p-4 text-center text-muted-foreground">
+                  No se encontraron productos.
+                </div>
+              )
             )}
           </div>
         </div>
