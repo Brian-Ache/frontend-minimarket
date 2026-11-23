@@ -18,7 +18,17 @@ import { AuthProvider } from "./context/AuthContext";
 // [SQLite] Imports para sincronización de SQLite al iniciar
 import { useEffect } from "react";
 import { initDatabase } from "./services/venta/sqliteService";
-import { syncProductos, startRetryLoop } from "./services/venta/syncService";
+import {
+  syncProductos,
+  startRetryLoop,
+  stopRetryLoop,
+  flushColaEventos,
+} from "./services/venta/syncService";
+import {
+  AUTH_SESSION_EXPIRED_EVENT,
+  AUTH_SESSION_RESTORED_EVENT,
+  getStoredAccessToken,
+} from "./lib/authSession";
 import { SesionProvider } from "./context/SesionContext";
 import ModalAbrirCaja from "./components/caja/ModalAbrirCaja";
 
@@ -46,21 +56,51 @@ function AppLayout() {
 }
 
 function App() {
-  // [SQLite] Inicializar BD local y sincronizar productos al iniciar la app
+  // [SQLite] Inicializar BD local y sincronizar productos al iniciar la app.
+  // Sin token no se llama al backend: la pantalla de login no debe disparar
+  // un 401 ni la expiración de una sesión que todavía no existe.
   useEffect(() => {
     const init = async () => {
       try {
         await initDatabase();
         console.log("[SQLite] Base de datos inicializada");
-        await syncProductos();
-        console.log("[SQLite] Productos sincronizados");
       } catch (error) {
         console.error("[SQLite] Error al inicializar:", error);
       }
+
+      if (!getStoredAccessToken()) return;
+
+      await syncProductos();
+      console.log("[SQLite] Productos sincronizados");
+
+      // El sync pudo haber disparado una expiración definitiva (refresh
+      // rechazado). En ese caso no arrancar el loop hasta re-loguear.
+      if (getStoredAccessToken()) {
+        startRetryLoop();
+      }
     };
     init();
-    // [SQLite] Iniciar loop de reintento de tickets pendientes
-    startRetryLoop();
+
+    // Sesión vencida: no seguir intentando sincronizar hasta re-loguear.
+    // La cola SQLite queda intacta.
+    const handleSessionExpired = () => stopRetryLoop();
+
+    // Login/refresh exitoso: reanudar sync de pendientes y catálogo.
+    const handleSessionRestored = () => {
+      startRetryLoop();
+      void flushColaEventos().catch((error) => {
+        console.error("[SQLite] Error al sincronizar cola tras login:", error);
+      });
+      void syncProductos();
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    window.addEventListener(AUTH_SESSION_RESTORED_EVENT, handleSessionRestored);
+
+    return () => {
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+      window.removeEventListener(AUTH_SESSION_RESTORED_EVENT, handleSessionRestored);
+    };
   }, []);
 
   return (

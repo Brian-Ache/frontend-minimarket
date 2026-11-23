@@ -1,5 +1,99 @@
 # Changelog Frontend
 
+## 2026-11-23
+
+---
+
+### Venta — Buscador de productos con fallback a la nube
+
+**Resumen**: `ModalBuscarProducto` leía solo SQLite (Tauri). Fuera de Tauri la búsqueda
+quedaba vacía. Ahora, si SQLite falla, consulta el backend con la misma estrategia que el
+buscador del módulo Producto.
+
+#### `src/components/venta/Modals/ModalBuscarProducto.tsx`
+
+- Al abrir: `getProductosSqlite()`; si falla, activa `modoNube`.
+- Fallback: `getProductosNube({ page: 0, size: 100, q })` con debounce de 400 ms.
+- Mapea `ProductoResponse → Producto` (`cantidad: 1`).
+- Estados `loading` / `error` visibles en la tabla; guardas `cancelado` para descartar
+  respuestas viejas al cerrar o cambiar la búsqueda.
+- Se mantiene el filtro local existente y la navegación con teclado.
+
+### Auth — Refresh automático y expiración de sesión sin perder datos offline
+
+**Resumen**: no existía manejo de `401`; el token vencido solo se resolvía recargando o
+fallando. Ahora se renueva con el refresh token, y solo se expulsa al login cuando el
+backend rechaza el refresh. Sin red no se cierra la sesión.
+
+#### `src/lib/authSession.ts` (NUEVO)
+
+- Storage de `token`, `refreshToken` y `user`.
+- Eventos `auth:session-expired`, `auth:token-refreshed` y `auth:session-restored`.
+- `isAuthEndpoint()` para excluir login/refresh/logout/invitación/password-reset.
+- La limpieza borra **solo** las claves de auth: nunca toca la cola ni los tickets de SQLite.
+
+#### `src/lib/api.tsx`
+
+- Interceptor de respuesta para `401`:
+  - `POST /api/auth/v1/refresh` con el refresh token guardado.
+  - Guarda el par rotado (`accessToken` + `refreshToken` nuevo) y el usuario.
+  - Reintenta el request original con el token nuevo.
+  - Single-flight para requests concurrentes y lock cross-tab (`navigator.locks`).
+  - Si otra pestaña ya renovó, usa el token actual antes de refrescar.
+- Endpoints `/api/auth/v1/*` excluidos: un login con credenciales inválidas no expira sesión.
+- `403` no desloguea (es permiso, no sesión).
+- Refresh `400/401/403/404` → expiración definitiva.
+- Sin red, timeout o `5xx` → fallo transitorio: conserva sesión, tokens y cola local.
+
+#### `src/context/AuthContext.tsx`
+
+- Escucha los eventos de sesión y expone `sessionExpired`.
+- Sincronización entre pestañas vía evento `storage`: logout o refresh en una pestaña se
+  refleja en las demás.
+- Login exitoso resetea flags y emite `auth:session-restored`.
+
+#### `src/components/ProtectedRoute.tsx` y `src/components/login/PageLogin.tsx`
+
+- Al expirar, guarda la ruta de origen y redirige a `/login` con `motivo: "expirada"`.
+- El login muestra “Tu sesión expiró. Iniciá sesión nuevamente.” y vuelve a la ruta previa.
+
+### Cola SQLite — Errores de red ya no agotan los intentos
+
+**Resumen**: cada fallo de red sumaba `intentos`; al llegar a 50 el evento quedaba omitido
+(~12 minutos de reintentos cada 15 s). Una semana offline terminaba perdiendo la cola.
+El sync del backend es idempotente por `tipo + uuid`, así que reintentar es seguro.
+
+#### `src/services/venta/sqliteService.ts`
+
+- +`marcarEventoErrorTransitorio()`: actualiza `ultimo_error` sin incrementar `intentos`.
+- Al iniciar, reset de `intentos` para eventos `PENDIENTE` que ya estaban en 50 o más.
+
+#### `src/services/venta/syncService.ts`
+
+- Los errores de lote (red, `401`, `5xx`) usan error transitorio y no gastan intentos.
+- `startRetryLoop` no ejecuta si `!navigator.onLine`.
+- Al evento `online`, dispara `flushColaEventos()` sin esperar los 15 s.
+- Sigue incrementando intentos solo para `ERROR` con `reintentable: true` del backend.
+
+#### `src/App.tsx`
+
+- Sin token no sincroniza productos ni arranca el retry loop.
+- `auth:session-expired` → `stopRetryLoop()`.
+- `auth:session-restored` → `startRetryLoop()` + `flushColaEventos()` + `syncProductos()`.
+- Si el sync inicial dispara una expiración definitiva, no arranca el loop hasta re-loguear.
+
+#### Verificación
+
+- `npm run build` (`tsc` + Vite) sin errores.
+
+#### Pendiente
+
+- **Sesión de caja offline**: `SesionContext` sigue leyendo
+  `GET /api/caja/v1/sesion-activa` del backend. Tras reiniciar la app sin internet no se
+  puede reabrir caja, aunque la cola de ventas quede intacta. Fuera de este cambio.
+
+---
+
 ## 2026-11-04
 
 ---

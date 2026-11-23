@@ -93,6 +93,14 @@ export async function initDatabase(): Promise<void> {
 
   // [SQLite] Retención: el historial de ventas locales vive 7 días.
   // Se limpia al arrancar, antes de que nadie lea la tabla.
+  //
+  // [Offline] Los eventos PENDIENTE que llegaron al tope de intentos por
+  // fallos de red (versiones anteriores incrementaban en cada reintento)
+  // vuelven a habilitarse. El sync es idempotente por tipo + uuid.
+  await db.execute(
+    "UPDATE evento_cola SET intentos = 0 WHERE estado = 'PENDIENTE' AND intentos >= 50"
+  );
+
   const limite = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const viejos = await db.select<{ id: string; creado_en: string }[]>(
     "SELECT id, creado_en FROM tickets_local"
@@ -360,6 +368,18 @@ export async function marcarEventoError(id: string, error: string): Promise<void
   const db = await Database.load(DB_NAME);
   await db.execute(
     `UPDATE evento_cola SET intentos = intentos + 1, ultimo_error = ? WHERE id = ?`,
+    [error, id]
+  );
+  await db.close();
+}
+
+// [SQLite] Error transitorio (sin red, backend caído, 401, 5xx): se registra
+// el motivo pero NO se gasta un intento. Así una semana offline no agota los
+// 50 intentos y los eventos siguen pendientes al reconectar.
+export async function marcarEventoErrorTransitorio(id: string, error: string): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    "UPDATE evento_cola SET ultimo_error = ? WHERE id = ?",
     [error, id]
   );
   await db.close();

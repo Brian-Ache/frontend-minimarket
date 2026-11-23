@@ -13,6 +13,7 @@ import {
   getEventosPendientes,
   marcarEventoEnviado,
   marcarEventoError,
+  marcarEventoErrorTransitorio,
   marcarEventoFalloDefinitivo,
   marcarTicketLocalSincronizado,
   type ProductoLocal,
@@ -136,10 +137,12 @@ async function enviarLoteBackend(): Promise<{ enviados: number; fallidos: number
         }
       }
     } catch (error: any) {
-      // [SQLite] Error de red o backend no disponible: marcar todo el chunk como error
+      // [Offline] Error de red, backend caído, 401 o 5xx: es transitorio.
+      // No gastar intentos, porque un local puede estar una semana sin
+      // internet y los eventos tienen que seguir pendientes al reconectar.
       console.error(`[SQLite] Error al enviar lote de ${chunk.length} eventos:`, error);
       for (const evento of chunk) {
-        await marcarEventoError(evento.id, error?.message || "Backend no disponible");
+        await marcarEventoErrorTransitorio(evento.id, error?.message || "Backend no disponible");
         fallidos++;
       }
     }
@@ -155,12 +158,16 @@ export async function flushColaEventos(): Promise<{ enviados: number; fallidos: 
 
 // [SQLite] Loop de reintento automático (se ejecuta cada 15 segundos)
 let retryInterval: ReturnType<typeof setInterval> | null = null;
+let onlineHandler: (() => void) | null = null;
 
 export function startRetryLoop(): void {
   if (retryInterval) return; // ya está corriendo
 
   console.log("[SQLite] Iniciando loop de reintento de eventos (cada 15s)");
   retryInterval = setInterval(async () => {
+    // [Offline] Sin red no tiene sentido golpear el backend ni sumar errores.
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+
     try {
       const pendientes = await getEventosPendientes();
       if (pendientes.length > 0) {
@@ -171,6 +178,16 @@ export function startRetryLoop(): void {
       console.error("[SQLite] Error en loop de reintento:", error);
     }
   }, 15000);
+
+  // Al recuperar internet, intentar el flush sin esperar los 15s.
+  if (typeof window !== "undefined" && !onlineHandler) {
+    onlineHandler = () => {
+      void flushColaEventos().catch((error) => {
+        console.error("[SQLite] Error al reintentar al recuperar conexión:", error);
+      });
+    };
+    window.addEventListener("online", onlineHandler);
+  }
 }
 
 export function stopRetryLoop(): void {
@@ -178,5 +195,10 @@ export function stopRetryLoop(): void {
     clearInterval(retryInterval);
     retryInterval = null;
     console.log("[SQLite] Loop de reintento detenido");
+  }
+
+  if (typeof window !== "undefined" && onlineHandler) {
+    window.removeEventListener("online", onlineHandler);
+    onlineHandler = null;
   }
 }

@@ -3,19 +3,27 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Label } from "../ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+
+interface LoginLocationState {
+  from?: string;
+  motivo?: string | null;
+}
 
 export default function PageLogin() {
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as LoginLocationState | null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await login(usuario, password);
-      navigate("/");
+      const destino = locationState?.from;
+      navigate(destino && destino !== "/login" ? destino : "/", { replace: true });
     } catch {
       // error ya está en el context
     }
@@ -25,6 +33,12 @@ export default function PageLogin() {
     <div className="flex justify-center items-center h-full">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-80">
         <h1 className="text-2xl font-bold text-center">Iniciar Sesión</h1>
+
+        {locationState?.motivo === "expirada" && (
+          <p className="text-amber-600 text-sm text-center">
+            Tu sesión expiró. Iniciá sesión nuevamente.
+          </p>
+        )}
 
         {error && (
           <p className="text-red-500 text-sm text-center">{error}</p>
