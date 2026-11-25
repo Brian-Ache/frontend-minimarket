@@ -132,11 +132,17 @@ export default function ModalCategorias({ open, onClose, onCreada }: Props) {
         <div className="grid gap-2">
           <Label className="text-slate-600">{editandoId ? "Editando" : "Nueva categoría"}</Label>
           <Input
-            placeholder="Nombre"
-            value={nombre}
-            autoFocus
-            onChange={(e) => setNombre(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") guardar(); }}
+              className="col-span-1 capitalize"
+              placeholder="Nombre"
+              value={nombre}
+              onChange={(e) => {
+                  const valor = e.target.value;
+                  const capitalizado = valor.replace(/\b\p{L}/gu, letra =>
+                      letra.toLocaleUpperCase()
+                  );
+                  setNombre(capitalizado);
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter") guardar(); }}
           />
           <Input
             placeholder="Descripción (opcional)"

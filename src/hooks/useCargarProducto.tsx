@@ -59,19 +59,48 @@ export default function useCargarProducto() {
 
   // Función genérica para actualizar cualquier campo del formulario de forma dinámica.
   // Recibe la propiedad a modificar ('field') y el nuevo valor ('value').
-  const handleChange = (field: keyof CargaProductoRequest, value: string | number | boolean) => {
-    setForm((prev) => {
-      const updated = { ...prev, [field]: value };
-      if (field === "costo" || field === "margen") {
-        const costo = field === "costo" ? Number(value) : prev.costo;
-        const margen = field === "margen" ? Number(value) : prev.margen;
-        const precioVenta = costo + (costo * margen / 100);
-        updated.precio = Math.ceil(precioVenta / 50) * 50;
-      }
-      return updated;
-    });
-  };
+  const handleChange = (
+    field: keyof CargaProductoRequest,
+    value: string | number | boolean
+  ) => {
+      setForm((prev) => {
+          const updated = { ...prev, [field]: value };
 
+          // MODIFICAR COSTO
+          if (field === "costo") {
+              const costo = Number(value);
+              const margen = prev.margen;
+
+              const precioVenta = costo + (costo * margen / 100);
+
+              updated.precio = Math.ceil(precioVenta / 50) * 50;
+          }
+
+          // MODIFICAR MARGEN
+          if (field === "margen") {
+              const costo = prev.costo;
+              const margen = Number(value);
+
+              const precioVenta = costo + (costo * margen / 100);
+
+              updated.precio = Math.ceil(precioVenta / 50) * 50;
+          }
+
+          // MODIFICAR PRECIO DE VENTA
+          if (field === "precio") {
+              const precioVenta = Number(value);
+              const costo = prev.costo;
+
+              if (costo > 0) {
+                  updated.margen = Number(
+                      (((precioVenta - costo) / costo) * 100).toFixed(2)
+                  );
+              }
+          }
+
+          return updated;
+      });
+  };
   // Función asíncrona que se ejecuta al presionar el botón de enviar el formulario.
   const cargar = async () => {
     setLoading(true); // Activa el estado de carga (bloquea la interfaz).

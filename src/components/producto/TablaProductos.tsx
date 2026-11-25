@@ -100,6 +100,8 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
     modalCantidad, setModalCantidad,
     modalCategorias, modalProveedores,
     modalSaving, modalDeleting, modalError,
+    handleChange,
+    handlePrecioVentaChange,
     guardar,
     eliminar,
   } = useModificarProducto({ producto: selectedProduct, stockInicial, onRefresh, onClose: () => setOpenModal(false) });
@@ -359,20 +361,46 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
               </div>
               <div className="col-span-3 grid gap-2">
                 <Label className="text-slate-600">Nombre</Label>
-                <Input value={modalNombre} onChange={(e) => setModalNombre(e.target.value)} />
+                <Input
+                    className="col-span-1 capitalize"
+                    placeholder="Nombre"
+                    value={modalNombre}
+                    onChange={(e) => {
+                        const valor = e.target.value;
+                        const capitalizado = valor.replace(/\b\p{L}/gu, letra =>
+                            letra.toLocaleUpperCase()
+                        );
+                        setModalNombre(capitalizado);
+                    }}
+                />
+
               </div>
 
               <div className="col-span-2 grid gap-2">
                 <Label className="text-slate-600">Precio compra</Label>
-                <Input type="number" value={modalCosto || ""} onChange={(e) => setModalCosto(Number(e.target.value))} />
+                <Input
+                  type="number"
+                  value={modalCosto || ""}
+                  onChange={(e) => handleChange("costo", Number(e.target.value))}
+                />
               </div>
+
               <div className="col-span-2 grid gap-2">
                 <Label className="text-slate-600">Margen (%)</Label>
-                <Input type="number" value={modalMargen || ""} onChange={(e) => setModalMargen(parseFloat(e.target.value) || 0)} />
+                <Input
+                  type="number"
+                  value={modalMargen || ""}
+                  onChange={(e) => handleChange("margen", Number(e.target.value))}
+                />
               </div>
+
               <div className="col-span-2 grid gap-2">
                 <Label className="text-slate-600">Precio venta</Label>
-                <Input value={modalPrecio} readOnly />
+                <Input
+                  type="number"
+                  value={modalPrecio || ""}
+                  onChange={(e) => handlePrecioVentaChange(Number(e.target.value))}
+                />
               </div>
 
               <div className="col-span-2 grid gap-2">

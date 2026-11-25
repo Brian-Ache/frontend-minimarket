@@ -47,6 +47,7 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
   const [modalNombre, setModalNombre] = useState("");
   const [modalCosto, setModalCosto] = useState(0);
   const [modalMargen, setModalMargen] = useState(0);
+  const [modalPrecio, setModalPrecio] = useState(0);
   const [modalManejaLotes, setModalManejaLotes] = useState(false);
   const [modalCategoriaId, setModalCategoriaId] = useState<string | null>(null);
   const [modalProveedorId, setModalProveedorId] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
   const [modalCategorias, setModalCategorias] = useState<CategoriaResponse[]>([]);
   const [modalProveedores, setModalProveedores] = useState<ProveedorResponse[]>([]);
 
-  const modalPrecio = Math.ceil((modalCosto + (modalCosto * modalMargen / 100)) / 50) * 50;
+  
 
   useEffect(() => {
     getCategorias().then(setModalCategorias).catch(() => {});
@@ -71,6 +72,10 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
       setModalNombre(producto.nombre);
       setModalCosto(producto.costo ?? 0);
       setModalMargen(producto.margen ?? 0);
+      //inicializar el precio
+      const precioCalculado =
+      Math.ceil(((producto.costo ?? 0) * (1 + (producto.margen ?? 0) / 100)) / 50) * 50;
+      setModalPrecio(precioCalculado);
       setModalManejaLotes(producto.manejaLotes);
       setModalCategoriaId(producto.categoria?.id ?? null);
       setModalProveedorId(producto.proveedor?.id ?? null);
@@ -79,14 +84,39 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
     }
   }, [producto, stockInicial]);
 
-  const handleChange = (field: keyof ModificarProductoRequest, value: string | number | boolean) => {
-    if (field === "costo") setModalCosto(Number(value));
-    else if (field === "margen") setModalMargen(Number(value));
+  const handleChange = (
+    field: keyof ModificarProductoRequest,
+    value: string | number | boolean
+  ) => {
+    if (field === "costo") {
+      const costo = Number(value);
+      setModalCosto(costo);
+
+      const precio = costo + (costo * modalMargen / 100);
+      setModalPrecio(Math.ceil(precio / 50) * 50);
+    }
+
+    else if (field === "margen") {
+      const margen = Number(value);
+      setModalMargen(margen);
+
+      const precio = modalCosto + (modalCosto * margen / 100);
+      setModalPrecio(Math.ceil(precio / 50) * 50);
+    }
+
     else if (field === "nombre") setModalNombre(value as string);
     else if (field === "barcode") setModalBarcode(value as string);
     else if (field === "manejaLotes") setModalManejaLotes(value as boolean);
     else if (field === "idCategoria") setModalCategoriaId(value as string);
     else if (field === "idProveedor") setModalProveedorId(value as string);
+  };
+
+  const handlePrecioVentaChange = (value: number) => {
+    setModalPrecio(value);
+    if (modalCosto > 0) {
+      const margen = ((value - modalCosto) / modalCosto) * 100;
+      setModalMargen(Number(margen.toFixed(2)));
+    }
   };
 
 
@@ -154,6 +184,7 @@ export default function useModificarProducto({ producto, stockInicial, onRefresh
     modalCategorias, modalProveedores,
     modalSaving, modalDeleting, modalError,
     handleChange,
+    handlePrecioVentaChange,
     guardar,
     eliminar,
   };

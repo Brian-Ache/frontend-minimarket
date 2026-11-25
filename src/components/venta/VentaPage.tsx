@@ -318,6 +318,22 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el Ã
     onSeleccionarProducto: setProductoSeleccionadoId,
     onFocusBarcode,
     eliminarProducto: eliminarProductoDeTicket,
+    cambiarCantidadProducto: (id, cambio) => {
+      setTickets((prevTickets) =>
+        prevTickets.map((ticket) =>
+          ticket.id === activeTicket
+            ? {
+                ...ticket,
+                productos: ticket.productos.map((producto) =>
+                  producto.id === id
+                    ? { ...producto, cantidad: Math.max(1, producto.cantidad + cambio) }
+                    : producto
+                ),
+              }
+            : ticket
+        )
+      );
+    },
     eliminarTicket: eliminarTicket,
     isModalOpen: isModalOpenVar,
     openBuscar: () => toggleModal("buscar", true),//f10

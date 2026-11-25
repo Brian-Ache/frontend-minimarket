@@ -160,8 +160,15 @@ export default function ModalSalida({
                         type="text"
                         placeholder="Agregar una descripcion"
                         value={mensaje}
-                        onChange={(e) => setMensaje(e.target.value)}
+                        onChange={(e) => {
+                            const valor = e.target.value;
+                            const capitalizado = valor.replace(/\b\p{L}/gu, letra =>
+                                letra.toLocaleUpperCase()
+                            );
+                            setMensaje(capitalizado);
+                        }}
                     />
+
                 </div>
 
                 {error && (

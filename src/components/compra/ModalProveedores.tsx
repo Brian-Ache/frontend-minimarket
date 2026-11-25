@@ -156,7 +156,13 @@ export default function ModalProveedores({ open, onClose, onCreada }: Props) {
               placeholder="Nombre"
               value={nombre}
               autoFocus
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => {
+                    const valor = e.target.value;
+                    const capitalizado = valor.replace(/\b\p{L}/gu, letra =>
+                        letra.toLocaleUpperCase()
+                    );
+                    setNombre(capitalizado);
+              }}
               onKeyDown={(e) => { if (e.key === "Enter") guardar(); }}
             />
             <Input

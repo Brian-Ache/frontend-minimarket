@@ -46,13 +46,29 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
     <div className="grid grid-cols-5 gap-2">
       <Input className="col-span-1" placeholder="Código de barras" value={form.barcode}
         onChange={(e) => handleChange("barcode", e.target.value)} />
-      <Input className="col-span-1" placeholder="Nombre" value={form.nombre}
-        onChange={(e) => handleChange("nombre", e.target.value)} />
+      <Input
+          className="col-span-1 capitalize"
+          placeholder="Nombre"
+          value={form.nombre}
+          onChange={(e) => {
+              const valor = e.target.value;
+              const capitalizado = valor.replace(/\b\p{L}/gu, letra =>
+                  letra.toLocaleUpperCase()
+              );
+              handleChange("nombre", capitalizado);
+          }}
+      />
       <Input className="col-span-1" placeholder="Precio compra" type="number" value={form.costo || ""}
         onChange={(e) => handleChange("costo", Number(e.target.value))} />
       <Input className="col-span-1" placeholder="Margen" type="number" value={form.margen || ""}
         onChange={(e) => handleChange("margen", parseFloat(e.target.value) || 0)} />
-      <Input className="col-span-1" placeholder="Precio venta" value={form.precio || ""} readOnly />
+      <Input
+          className="col-span-1"
+          placeholder="Precio venta"
+          type="number"
+          value={form.precio || ""}
+          onChange={(e) => handleChange("precio", Number(e.target.value))}
+      />
 
       <div className="col-span-1 grid gap-2">
         <Label className="text-slate-600">Categoría</Label>
