@@ -35,6 +35,7 @@ interface ShortcutParams {
   onSeleccionarProducto: (id: number | string | null) => void;
   onFocusBarcode: () => void;
   eliminarProducto: (id: number | string) => void;
+  cambiarCantidadProducto: (id: number | string, cambio: number) => void;
   eliminarTicket: (id: number) => void;
   isModalOpen: boolean;
   
@@ -56,6 +57,7 @@ export function useVentaShortcuts({
   onSeleccionarProducto,
   onFocusBarcode,
   eliminarProducto,
+  cambiarCantidadProducto,
   eliminarTicket,
   isModalOpen,
   openBuscar,
@@ -162,6 +164,21 @@ export function useVentaShortcuts({
       if (productosDelTicket.length === 0) return;
       const currentIndex = productosDelTicket.findIndex((p) => p.id === productoSeleccionadoId);
 
+      if (productoSeleccionadoId !== null && !isInputFocused) {
+        const cambioCantidad = e.key === "+" || e.code === "NumpadAdd"
+          ? 1
+          : e.key === "-" || e.code === "NumpadSubtract"
+            ? -1
+            : 0;
+
+        if (cambioCantidad !== 0 && currentIndex !== -1) {
+          e.preventDefault();
+          cambiarCantidadProducto(productoSeleccionadoId, cambioCantidad);
+          onFocusBarcode();
+          return;
+        }
+      }
+
       if (e.key === "ArrowDown") {
         //Si está escribiendo en otro input, congelamos la navegación de la tabla
         if (isInputFocused) return;
@@ -205,6 +222,7 @@ export function useVentaShortcuts({
     onSeleccionarProducto, 
     onFocusBarcode, 
     eliminarProducto, 
+    cambiarCantidadProducto,
     eliminarTicket, 
     isModalOpen, 
     openBuscar, 
