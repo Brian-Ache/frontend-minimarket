@@ -122,7 +122,7 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
 
 
   return (
-    <div className="flex w-full flex-col gap-3 md:h-full md:overflow-hidden">
+    <div className="flex w-full flex-col gap-3 pb-40 md:h-full md:overflow-hidden md:pb-0">
 
       <div className="shrink-0 rounded-md border border-border p-2 sm:p-3">
         <CompraHeader 
@@ -152,7 +152,7 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
         />
       </div>
 
-      <div className="sticky bottom-0 z-20 shrink-0 rounded-t-md border border-border bg-white p-3 shadow-[0_-8px_20px_rgba(0,0,0,0.08)] [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))] md:static md:rounded-md md:shadow-none md:[padding-bottom:0.75rem]">
+      <div className="fixed inset-x-0 bottom-0 z-50 shrink-0 border-t border-border bg-white p-3 shadow-[0_-8px_20px_rgba(0,0,0,0.12)] [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))] md:static md:rounded-md md:border md:shadow-none md:[padding-bottom:0.75rem]">
         <CompraFooter
           total={compra.total} 
           onSave={handleSendToBackend}
