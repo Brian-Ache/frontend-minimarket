@@ -152,7 +152,7 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
         />
       </div>
 
-      <div className="shrink-0 rounded-md border border-border bg-white p-3">
+      <div className="sticky bottom-0 z-20 shrink-0 rounded-t-md border border-border bg-white p-3 shadow-[0_-8px_20px_rgba(0,0,0,0.08)] [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))] md:static md:rounded-md md:shadow-none md:[padding-bottom:0.75rem]">
         <CompraFooter
           total={compra.total} 
           onSave={handleSendToBackend}
