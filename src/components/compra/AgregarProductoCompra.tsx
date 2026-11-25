@@ -134,9 +134,9 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
     }
   }
   return (
-    <div className="grid grid-cols-1 md:grid-cols-8 gap-2 items-end bg-slate-50 p-3 rounded-lg border-dashed border-2 border-border">
+    <div className="grid grid-cols-2 items-end gap-2 rounded-lg border-2 border-dashed border-border bg-slate-50 p-3 sm:grid-cols-4 md:grid-cols-8">
       
-      <div className="md:col-span-2 relative" ref={contenedorRef}>
+      <div className="relative col-span-2 sm:col-span-4 md:col-span-2" ref={contenedorRef}>
         <label className="text-xs font-semibold text-slate-500 uppercase ml-1">Producto</label>
         <Input 
           ref={inputBusquedaRef}
@@ -213,7 +213,7 @@ export default function AgregarProductoCompra({ onAgregar }: AgregarProductoProp
         />
       </div>
 
-      <div className="md:col-span-1">
+      <div className="col-span-2 sm:col-span-4 md:col-span-1">
         <Button 
             onClick={handleAgregar}
             disabled={!form.productoId || form.costo <= 0 || form.cantidad <= 0}

@@ -122,9 +122,9 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
 
 
   return (
-    <div className="w-full h-full flex flex-col gap-3 overflow-hidden">
+    <div className="flex w-full flex-col gap-3 md:h-full md:overflow-hidden">
 
-      <div className="shrink-0">
+      <div className="shrink-0 rounded-md border border-border p-2 sm:p-3">
         <CompraHeader 
           datos={{
             proveedor: compra.proveedor,
@@ -144,7 +144,7 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
         }}/>
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="min-h-[240px] md:min-h-0 md:flex-1">
         <ItemsTable
         //items(es de tipo Compra["items"] tengo que indicar a items de que tipo es) es el array de productos que se muestra en la tabla, y setItems es la función que se pasa a la tabla para actualizar ese array cuando se editan cantidades, costos o se eliminan productos. La tabla llamará a setItems con el nuevo array de items cada vez que haya un cambio, y eso actualizará el estado de compra en este componente padre.
           items={compra.items}
@@ -152,7 +152,7 @@ export default function NuevaCompra({ onCompraCreada }: NuevaCompraProps){
         />
       </div>
 
-      <div className="shrink-0">
+      <div className="shrink-0 rounded-md border border-border bg-white p-3">
         <CompraFooter
           total={compra.total} 
           onSave={handleSendToBackend}

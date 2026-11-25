@@ -150,10 +150,10 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
     "$" + total.toLocaleString("es-AR", { minimumFractionDigits: 0 });
 
   return (
-    <div className="h-full flex flex-col gap-3 overflow-hidden">
+    <div className="flex flex-col gap-3 md:h-full md:overflow-hidden">
 
       {/* Filtros */}
-      <div className="p-2 flex gap-2 bg-slate-100 flex-wrap shrink-0">
+      <div className="grid shrink-0 grid-cols-2 gap-2 rounded-md bg-slate-100 p-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
 
         {/* Selector de Proveedor */}
         <div className="grid gap-2">
@@ -163,7 +163,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
               setProveedorId(value === "__ALL__" ? undefined : value)
             }
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full lg:w-[160px]">
               <SelectValue placeholder="Proveedor" />
             </SelectTrigger>
             <SelectContent>
@@ -183,7 +183,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
               setTipoComprobante(value === "__ALL__" ? undefined : value)
             }
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full lg:w-[160px]">
               <SelectValue placeholder="Comprobante" />
             </SelectTrigger>
             <SelectContent>
@@ -203,7 +203,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
               setSortTotal(value === "__NONE__" ? undefined : value as "asc" | "desc")
             }
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full lg:w-[160px]">
               <SelectValue placeholder="Ordenar por total" />
             </SelectTrigger>
             <SelectContent>
@@ -217,7 +217,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
         {/* Selector de Período */}
         <div className="grid gap-2">
           <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full lg:w-[160px]">
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
@@ -234,7 +234,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
         {/* Fechas personalizadas */}
         {esPersonalizado && (
           <>
-            <div className="flex items-center gap-1">
+            <div className="col-span-2 flex items-center gap-1 sm:col-span-1">
               <Label className="text-xs text-slate-500">Desde:</Label>
               <Input
                 type="date"
@@ -243,10 +243,10 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
                   const v = e.target.value;
                   setFechaDesde(v ? new Date(v + "T00:00:00").toISOString() : "");
                 }}
-                className="h-9 w-[140px] text-xs"
+                className="h-9 min-w-0 flex-1 text-xs sm:w-[140px] sm:flex-none"
               />
             </div>
-            <div className="flex items-center gap-1">
+            <div className="col-span-2 flex items-center gap-1 sm:col-span-1">
               <Label className="text-xs text-slate-500">Hasta:</Label>
               <Input
                 type="date"
@@ -255,7 +255,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
                   const v = e.target.value;
                   setFechaHasta(v ? new Date(v + "T23:59:59").toISOString() : "");
                 }}
-                className="h-9 w-[140px] text-xs"
+                className="h-9 min-w-0 flex-1 text-xs sm:w-[140px] sm:flex-none"
               />
             </div>
           </>
@@ -274,7 +274,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
       </div>
 
       {/* Tabla */}
-      <div ref={containerRef} className="flex-1 border border-border rounded-md overflow-auto">
+      <div ref={containerRef} className="min-h-[35dvh] flex-1 overflow-visible rounded-md border border-border md:min-h-0 md:overflow-auto">
 
         {loading ? (
           <div className="flex items-center justify-center h-full text-slate-500">
@@ -289,6 +289,45 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
             No hay compras registradas
           </div>
         ) : (
+          <>
+          <div className="divide-y divide-border md:hidden">
+            {compras.map((c, i) => (
+              <div
+                key={c.id}
+                className={`p-3 ${i === selectedIndex ? "bg-slate-100" : "hover:bg-slate-50"}`}
+              >
+                <button
+                  type="button"
+                  className="block w-full text-left"
+                  onClick={() => {
+                    setSelectedIndex(i);
+                    handleRowClick(c);
+                  }}
+                >
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="font-medium">{formatFecha(c.fecha)}</span>
+                    <span className="shrink-0 font-semibold text-blue-700">{formatTotal(c.total)}</span>
+                  </span>
+                  <span className="mt-1 block truncate text-sm">{c.proveedor?.nombre ?? "—"}</span>
+                  <span className="mt-1 block truncate text-xs text-slate-500">
+                    {c.tipoComprobante ? `${c.tipoComprobante} ${c.nroComprobante ?? ""}` : "Sin comprobante"}
+                    {c.observaciones ? ` · ${c.observaciones}` : ""}
+                  </span>
+                </button>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    aria-label="Eliminar compra"
+                    className="rounded p-2 text-red-500 hover:bg-red-50"
+                    onClick={() => handleEliminar(c.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead className="bg-slate-100 sticky top-0">
               <tr>
@@ -327,12 +366,14 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
               ))}
             </tbody>
           </table>
+          </div>
+          </>
         )}
       </div>
 
       {/* Paginación */}
       {totalPages > 0 && (
-        <div className="p-2 border border-border rounded-md bg-slate-50 flex items-center justify-between text-sm shrink-0">
+        <div className="flex shrink-0 flex-col items-center justify-between gap-2 rounded-md border border-border bg-slate-50 p-2 text-sm sm:flex-row">
           <span className="text-slate-500">
             {totalElements} resultado{totalElements !== 1 ? "s" : ""}
           </span>
@@ -345,9 +386,13 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
             >
               Anterior
             </Button>
+            <span className="px-1 text-slate-600 sm:hidden">
+              {totalPages > 0 ? `${currentPage + 1}/${totalPages}` : "0/0"}
+            </span>
             {Array.from({ length: totalPagesToShow }, (_, i) => i).map((i) => (
               <Button
                 key={i}
+                className="hidden sm:inline-flex"
                 variant={i === currentPage ? "default" : "outline"}
                 size="sm"
                 onClick={() => setCurrentPage(i)}
@@ -369,7 +414,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
 
       {/* Modal detalle de compra */}
       <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="max-h-[90dvh] w-[calc(100%_-_1rem)] max-w-[600px] overflow-y-auto rounded-lg p-4 sm:w-full sm:p-6">
           <DialogHeader>
             <DialogTitle>Detalle de Compra</DialogTitle>
             <DialogDescription>
@@ -380,7 +425,7 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
           {compraSeleccionada && (
             <div className="grid gap-4 py-2">
               {/* Info de la compra */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <span className="font-semibold text-slate-600">Proveedor: </span>
                   {compraSeleccionada.proveedor?.nombre ?? "—"}
@@ -402,8 +447,8 @@ export default function HistorialCompras({ refreshKey = 0 }: HistorialComprasPro
               </div>
 
               {/* Tabla de productos */}
-              <div className="border border-border rounded-md overflow-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-auto rounded-md border border-border">
+                <table className="w-full min-w-[480px] text-sm">
                   <thead className="bg-slate-100">
                     <tr>
                       <th className="p-2 text-left">Producto</th>

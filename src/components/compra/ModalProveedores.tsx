@@ -141,7 +141,7 @@ export default function ModalProveedores({ open, onClose, onCreada }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-[860px]">
+      <DialogContent className="max-h-[90dvh] w-[calc(100%_-_1rem)] max-w-[860px] overflow-y-auto rounded-lg p-4 sm:w-full sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Proveedores</DialogTitle>
           <DialogDescription>
@@ -151,7 +151,7 @@ export default function ModalProveedores({ open, onClose, onCreada }: Props) {
 
         <div className="grid gap-2">
           <Label className="text-slate-600">{editandoId ? "Editando" : "Nuevo proveedor"}</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Input
               placeholder="Nombre"
               value={nombre}
@@ -186,7 +186,36 @@ export default function ModalProveedores({ open, onClose, onCreada }: Props) {
           </div>
         </div>
 
-        <table className="w-full text-sm">
+        <div className="divide-y divide-border sm:hidden">
+          {cargando ? (
+            <p className="p-4 text-center text-sm text-slate-400">Cargando...</p>
+          ) : proveedores.length === 0 ? (
+            <p className="p-4 text-center text-sm text-slate-400">No hay proveedores cargados</p>
+          ) : (
+            proveedores.map((p) => (
+              <div key={p.id} className="space-y-2 py-3">
+                <p className="font-medium">{p.nombre}</p>
+                <p className="break-all text-xs text-slate-600">{p.telefono || "Sin teléfono"} · {p.email || "Sin email"}</p>
+                <p className="break-words text-xs text-slate-600">{p.direccion || "Sin dirección"}</p>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => editar(p)}>
+                    <Pencil className="mr-1 h-4 w-4" /> Editar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={borrandoId === p.id}
+                    onClick={() => borrar(p)}
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" /> Eliminar
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full min-w-[650px] text-sm">
           <thead className="bg-slate-200">
             <tr>
               <th className="p-2 text-left">Nombre</th>
@@ -238,16 +267,17 @@ export default function ModalProveedores({ open, onClose, onCreada }: Props) {
             )}
           </tbody>
         </table>
+        </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <DialogFooter className="flex flex-row justify-between items-center w-full">
+        <DialogFooter className="flex w-full flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
           {editandoId && (
             <Button variant="link" size="sm" className="h-auto p-0" onClick={limpiar}>
               Cancelar edición
             </Button>
           )}
-          <div className={`flex gap-2 ${editandoId ? "" : "ml-auto"}`}>
+          <div className={`flex gap-2 ${editandoId ? "" : "sm:ml-auto"}`}>
             <Button variant="outline" onClick={onClose}>Cerrar</Button>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700"

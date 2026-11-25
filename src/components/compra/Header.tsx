@@ -34,8 +34,8 @@ export default function Header({ datos, onChange }: HeaderProps) {
 
 
   return (
-    <div className="grid grid-cols-5 gap-2">
-      <div className="flex items-center gap-1">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="flex min-w-0 items-center gap-1 lg:col-span-2">
         <Select value={datos.proveedor}
             onValueChange={(v) => onChange("proveedor", v)}>
             <SelectTrigger className="flex-1 min-w-0"><SelectValue placeholder="Selec Proveedor" /></SelectTrigger>
@@ -54,7 +54,7 @@ export default function Header({ datos, onChange }: HeaderProps) {
         </Button>
       </div>
       {/*<Input type="date" value={datos.fecha} onChange={(e) => onChange("fecha", e.target.value)}/>*/}
-      <Input type="date" value={datos.fecha} disabled className="bg-slate-50 text-slate-500" />
+      <Input type="date" value={datos.fecha} disabled className="min-w-0 bg-slate-50 text-slate-500" />
       
       <Select value={datos.tipoComprobante || ""} onValueChange={(v) => onChange("tipoComprobante", v)}>
         <SelectTrigger className="w-full"><SelectValue placeholder="Tipo de comprobante" /></SelectTrigger>
@@ -69,6 +69,7 @@ export default function Header({ datos, onChange }: HeaderProps) {
       {/*<Input placeholder="N° comprobante" />*/}
 
       <Input 
+        className="min-w-0 sm:col-span-2 lg:col-span-1"
         placeholder="Observaciones" 
         value={datos.observaciones}
         onChange={(e) => onChange("observaciones", e.target.value)}
