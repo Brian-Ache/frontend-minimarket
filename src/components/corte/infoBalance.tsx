@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getResumenDiario, type ResumenCaja } from "@/services/cajaService";
-import { aFechaISO } from "./fechas";
+import {
+  getMovimientosPorRangoCompleto,
+  getResumenDiario,
+  type ResumenCaja,
+} from "@/services/cajaService";
+import { aFechaISO, rangoDelDia } from "./fechas";
 import ModalVentasDelDia from "./ModalVentasDelDia";
+import { Separator } from "@/components/ui/separator";
 
 interface InfoBalanceProps {
   date: Date;
   refresco: number;
+  onVentaAnulada?: () => void;
 }
 
 function monto(n: number | null): string {
@@ -15,24 +21,42 @@ function monto(n: number | null): string {
   return n < 0 ? `-${abs}` : abs;
 }
 
-export default function InfoBalance({ date, refresco }: InfoBalanceProps) {
+export default function InfoBalance({ date, refresco, onVentaAnulada }: InfoBalanceProps) {
   const [resumen, setResumen] = useState<ResumenCaja | null>(null);
+  const [totalSalidasReversa, setTotalSalidasReversa] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVentasAbierto, setModalVentasAbierto] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+    const { desde, hasta } = rangoDelDia(date);
     setCargando(true);
     setError(null);
+    setTotalSalidasReversa(0);
 
-    getResumenDiario(aFechaISO(date))
-      .then((data) => {
-        if (mounted) setResumen(data);
-      })
-      .catch((err) => {
-        if (mounted) {
-          setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || "Error al cargar el balance del día");
+    Promise.allSettled([
+      getResumenDiario(aFechaISO(date)),
+      getMovimientosPorRangoCompleto(desde, hasta),
+    ])
+      .then(([resumenResult, movimientosResult]) => {
+        if (!mounted) return;
+
+        if (resumenResult.status === "fulfilled") {
+          setResumen(resumenResult.value);
+        } else {
+          setError(
+            (resumenResult.reason as { response?: { data?: { error?: string } } }).response?.data?.error ||
+              "Error al cargar el balance del día"
+          );
+        }
+
+        if (movimientosResult.status === "fulfilled") {
+          setTotalSalidasReversa(
+            movimientosResult.value
+              .filter((m) => m.tipo === "SALIDA" && m.origen === "REVERSA")
+              .reduce((acc, m) => acc + m.monto, 0)
+          );
         }
       })
       .finally(() => {
@@ -52,7 +76,9 @@ export default function InfoBalance({ date, refresco }: InfoBalanceProps) {
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 min-h-0 overflow-y-visible md:overflow-y-auto flex flex-col justify-center gap-3 p-4">
+      <Separator className="my-1" />
+
+      <CardContent className="flex-1 min-h-0 overflow-y-visible md:overflow-y-auto flex flex-col justify-between gap-2 p-4">
         {error && <p className="text-sm text-red-600 text-center">{error}</p>}
         {cargando && !error && (
           <p className="text-sm text-slate-400 text-center">Cargando balance...</p>
@@ -93,7 +119,11 @@ export default function InfoBalance({ date, refresco }: InfoBalanceProps) {
             <div className="p-4 rounded-lg bg-red-50/50 border border-red-100">
               <p className="text-xs font-medium text-red-700/80 uppercase tracking-wide">Total Salidas</p>
               <p className="text-2xl font-bold text-red-700/90 mt-0.5">
-                {monto(resumen.totalSalidasManuales !== null ? -resumen.totalSalidasManuales : null)}
+                {monto(
+                  resumen.totalSalidasManuales !== null
+                    ? -(resumen.totalSalidasManuales + totalSalidasReversa)
+                    : null
+                )}
               </p>
             </div>
 
@@ -110,6 +140,7 @@ export default function InfoBalance({ date, refresco }: InfoBalanceProps) {
         open={modalVentasAbierto}
         onOpenChange={setModalVentasAbierto}
         date={date}
+        onVentaAnulada={onVentaAnulada}
       />
     </Card>
   );

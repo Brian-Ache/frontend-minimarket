@@ -34,10 +34,15 @@ const TICKETS_VACIOS: Ticket[] = [
 
 export default function VentaPage() {
   //id de la sesion de caja(para eso el import de useSesion)
-  const { idSesion, sesion } = useSesion();
+  const { idSesion, sesion, loading, cargar } = useSesion();
 
   // [SQLite] Obtener usuario autenticado para el cobro
   const { user } = useAuth();
+
+  // Revalidar la caja al entrar a Ventas: pudo haberse cerrado en otra pestaña.
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
 
   //calcula el total de venta de los productos de un ticket
   const [total, setTotal] = useState(0);
@@ -259,6 +264,9 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
 
   // [SQLite] Función para cobrar el ticket actual
   const cobrar = async () => {
+    if (loading) {
+      return;
+    }
     if (!sesion) {
       return alert("No hay una sesión de caja abierta. Abrí la caja primero.");
     }
@@ -289,13 +297,15 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
       setProductoSeleccionadoId(null);
     } else {
       alert(resultado.mensaje);
-      // [SQLite] Aunque falle el backend, vaciar el ticket (ya quedó en la cola)
-      setTickets((prev) =>
-        prev.map((t) =>
-          t.id === activeTicket ? { ...t, productos: [] } : t
-        )
-      );
-      setProductoSeleccionadoId(null);
+      // [SQLite] Solo vaciar si la venta quedó guardada en la cola local.
+      if (resultado.ticketId) {
+        setTickets((prev) =>
+          prev.map((t) =>
+            t.id === activeTicket ? { ...t, productos: [] } : t
+          )
+        );
+        setProductoSeleccionadoId(null);
+      }
     }
   };
 
@@ -367,6 +377,7 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
         openModalVentasDia={modales.ventasDia}
         setOpenModalVentasDia={(open)=>toggleModal("ventasDia", open)}
         sesion={sesion}
+        loading={loading}
       />
     </div>
   );

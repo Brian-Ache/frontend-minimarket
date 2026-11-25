@@ -30,7 +30,11 @@ export default function Navbar() {
     avisoTimer.current = setTimeout(() => setAviso(null), 4000);
   };
 
+
+
+  //avise si esta seguro de salir y luego sale si esta de acuerdo
   const handleLogout = async () => {
+
     setMenuOpen(false);
     try {
       await logout();

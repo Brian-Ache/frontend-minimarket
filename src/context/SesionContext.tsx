@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -60,6 +61,7 @@ export function SesionProvider({ children }: { children: ReactNode }) {
   const { user, token } = useAuth();
   const [sesion, setSesion] = useState<SesionLocal | null>(null);
   const [loading, setLoading] = useState(true);
+  const ultimaRevalidacion = useRef(0);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -137,6 +139,26 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     const alistar = () => void cargar();
     window.addEventListener(SQLITE_READY_EVENT, alistar);
     return () => window.removeEventListener(SQLITE_READY_EVENT, alistar);
+  }, [cargar]);
+
+  useEffect(() => {
+    const revalidar = () => {
+      if (document.visibilityState !== "visible") return;
+
+      const ahora = Date.now();
+      if (ahora - ultimaRevalidacion.current < 1000) return;
+      ultimaRevalidacion.current = ahora;
+
+      void cargar();
+    };
+
+    window.addEventListener("focus", revalidar);
+    document.addEventListener("visibilitychange", revalidar);
+
+    return () => {
+      window.removeEventListener("focus", revalidar);
+      document.removeEventListener("visibilitychange", revalidar);
+    };
   }, [cargar]);
 
   const abrir = useCallback(

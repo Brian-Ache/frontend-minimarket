@@ -92,3 +92,30 @@ export async function getMovimientosPorRango(
   );
   return data.content;
 }
+
+/**
+ * Todos los movimientos del rango, sin pasarse del techo de página del backend (100).
+ * Entradas y Salidas necesitan la lista completa del día para filtrar por tipo.
+ */
+export async function getMovimientosPorRangoCompleto(
+  desde: string,
+  hasta: string
+): Promise<MovimientoCaja[]> {
+  const size = 100;
+  const todos: MovimientoCaja[] = [];
+  let page = 0;
+
+  while (true) {
+    const { data } = await api.get<PaginatedResponse<MovimientoCaja>>(
+      "/api/caja/v1/movimientos",
+      { params: { desde, hasta, page, size } }
+    );
+
+    todos.push(...data.content);
+
+    if (data.content.length === 0 || page + 1 >= data.totalPages) break;
+    page++;
+  }
+
+  return todos;
+}

@@ -11,9 +11,11 @@
 import {
   crearEventoCola,
   crearTicketLocal,
+  marcarTicketLocalAnulado,
   type EventoCola,
   type DetalleTicketCola,
 } from "./sqliteService";
+import { flushColaEventos } from "./syncService";
 
 import { uuidV7 } from "@/lib/uuidv7";
 import { nextSecuencia } from "@/lib/sequence";
@@ -139,4 +141,57 @@ export async function cobrarTicket(
     ticketId,
     mensaje: "Venta registrada",
   };
+}
+
+// [SQLite] Anular un ticket: siempre se encola el evento ANULAR, aunque el
+// ticket ya esté sincronizado. El backend decide si el permiso alcanza.
+export async function anularTicket(
+  ticketId: string,
+  idUsuario: string,
+  motivo?: string
+): Promise<void> {
+  const secuencia = nextSecuencia();
+  const ahora = new Date().toISOString();
+
+  const fecha = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const ahoraLocal =
+    `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}T` +
+    `${pad(fecha.getHours())}:${pad(fecha.getMinutes())}:${pad(fecha.getSeconds())}`;
+
+  const eventoId = uuidV7();
+  const payload = JSON.stringify({
+    uuid: ticketId,
+    tipo: "ANULAR",
+    secuencia,
+    ocurridoEn: ahoraLocal,
+    idUsuario,
+    motivo: motivo ?? null,
+  });
+
+  const evento: EventoCola = {
+    id: eventoId,
+    tipo: "ANULAR",
+    uuid_entidad: ticketId,
+    secuencia,
+    ocurrido_en: ahora,
+    payload,
+    estado: "PENDIENTE",
+    intentos: 0,
+    ultimo_error: null,
+    dispositivo: "caja-01",
+    creado_en: ahora,
+    enviado_en: null,
+  };
+
+  await crearEventoCola(evento);
+  await marcarTicketLocalAnulado(ticketId);
+
+  if (typeof navigator === "undefined" || navigator.onLine) {
+    try {
+      await flushColaEventos();
+    } catch (error) {
+      console.warn("[SQLite] No se pudo enviar la anulación todavía:", error);
+    }
+  }
 }

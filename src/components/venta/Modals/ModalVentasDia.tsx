@@ -15,6 +15,8 @@ import {
   type TicketDetalleLocal,
   type TicketLocal,
 } from "@/services/venta/sqliteService";
+import { anularTicket } from "@/services/venta/ventaLocalService";
+import { useAuth } from "@/context/AuthContext";
 
 type ProductoVenta = {
   nombre: string;
@@ -39,6 +41,9 @@ export default function ModalVentasDia({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detalle, setDetalle] = useState<TicketDetalleLocal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [anulandoId, setAnulandoId] = useState<string | null>(null);
+  const [errorAnulacion, setErrorAnulacion] = useState<string | null>(null);
+  const { user } = useAuth();
 
   //cada vez que se renderiza este modal se cargan los tickets de sqllite
   useEffect(() => {
@@ -79,6 +84,8 @@ export default function ModalVentasDia({
 
   //cada vez que se renderiza este modal se carga un arreglo de detalle con los productos de un ticket que este seleccionado
   useEffect(() => {
+    setErrorAnulacion(null);
+
     if (!selectedId) {
       setDetalle([]);
       return;
@@ -135,24 +142,63 @@ export default function ModalVentasDia({
     }
   };
 
-  //Como tickets_local guarda PENDIENTE | ENVIADO | ERROR, cada uno se muestra
-  //con su color y su simbolo: pendiente es que todavia no llego al backend,
-  //error es que el backend lo rechazo y alguien tiene que mirarlo.
+  //Como tickets_local guarda PENDIENTE | ENVIADO | ERROR | ANULADO, cada uno
+  //se muestra con su color y su simbolo.
   const estadoVisible = (estado: string) => {
     switch (estado) {
       case "ENVIADO":
         return { texto: "Sincronizado", clase: "text-emerald-600", simbolo: "✓" };
       case "ERROR":
         return { texto: "Error de sincronización", clase: "text-red-600", simbolo: "✗" };
+      case "ANULADO":
+        return { texto: "Anulada", clase: "text-slate-500", simbolo: "—" };
       default:
         return { texto: "Pendiente", clase: "text-amber-600", simbolo: "!" };
     }
   };
 
+  const esAdmin = user?.rol === "ADMIN" || user?.rol === "SUPERADMIN";
+
+  const puedeAnular = (ticket: TicketLocal) =>
+    (ticket.estado === "PENDIENTE" || ticket.estado === "ENVIADO") &&
+    (esAdmin || ticket.id_usuario === user?.id);
+
+  const handleAnular = async (ticket: TicketLocal) => {
+    const hora = new Date(ticket.creado_en).toLocaleTimeString("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const total = Number(ticket.total).toFixed(2);
+
+    if (!window.confirm(`¿Anular la venta de las ${hora} por $${total}?`)) return;
+
+    setAnulandoId(ticket.id);
+    setErrorAnulacion(null);
+
+    try {
+      await anularTicket(
+        ticket.id,
+        user?.id ?? ticket.id_usuario,
+        "Anulación desde Ventas del Día"
+      );
+      setTickets((prev) =>
+        prev.map((t) => (t.id === ticket.id ? { ...t, estado: "ANULADO" } : t))
+      );
+    } catch (error) {
+      const mensaje =
+        (error as { response?: { data?: { error?: string } } }).response?.data?.error ||
+        (error as Error).message ||
+        "No se pudo anular la venta";
+      setErrorAnulacion(mensaje);
+    } finally {
+      setAnulandoId(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="!max-w-[45vw] rounded-xl border border-slate-200 bg-white p-0 text-slate-800 shadow-xl">
-        <DialogHeader className="border-b border-slate-200 px-4 py-3">
+      <DialogContent className="!max-w-[55vw] h-[80vh] overflow-hidden !flex !flex-col rounded-xl border border-slate-200 bg-white p-0 text-slate-800 shadow-xl">
+        <DialogHeader className="shrink-0 border-b border-slate-200 px-4 py-3">
           <DialogTitle className="text-2xl font-bold tracking-tight text-slate-800">
             Ventas del Día
           </DialogTitle>
@@ -162,17 +208,17 @@ export default function ModalVentasDia({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex min-h-[320px] items-center justify-center text-slate-500">
+          <div className="flex flex-1 min-h-[320px] items-center justify-center text-slate-500">
             Cargando ventas...
           </div>
         ) : (
-          <div className="grid grid-cols-[1fr_1.4fr]">
-            <section className="min-h-[420px] border-r border-slate-200 bg-slate-50">
-              <div className="border-b border-slate-200 px-3 py-2 text-lg font-semibold text-slate-700">
+          <div className="grid flex-1 min-h-0 grid-cols-[0.9fr_1.8fr] overflow-hidden">
+            <section className="flex min-h-0 flex-col border-r border-slate-200 bg-slate-50">
+              <div className="shrink-0 border-b border-slate-200 px-3 py-2 text-lg font-semibold text-slate-700">
                 Lista de Tickets
               </div>
 
-              <div className="space-y-2 p-3">
+              <div className="flex-1 min-h-0 space-y-2 overflow-y-auto p-3">
                 {tickets.length === 0 ? (
                   <div className="text-sm text-slate-500">No hay tickets guardados.</div>
                 ) : (
@@ -189,6 +235,7 @@ export default function ModalVentasDia({
                           isSelected
                             ? "border-yellow-400 bg-yellow-50 text-yellow-800"
                             : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100",
+                          ticket.estado === "ANULADO" ? "opacity-60" : "",
                         ].join(" ")}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -212,21 +259,21 @@ export default function ModalVentasDia({
                 )}
               </div>
 
-              <div className="border-t border-slate-200 px-3 py-2 text-sm text-slate-500">
+              <div className="shrink-0 border-t border-slate-200 px-3 py-2 text-sm text-slate-500">
                 [t/↓] Navegar
               </div>
             </section>
 
-            <section className="min-h-[420px] bg-white">
-              <div className="border-b border-slate-200 px-3 py-2 text-lg font-semibold text-slate-700">
+            <section className="flex min-h-0 flex-col bg-white">
+              <div className="shrink-0 border-b border-slate-200 px-3 py-2 text-lg font-semibold text-slate-700">
                 Detalle del Ticket Seleccionado
               </div>
 
               {!selectedTicket ? (
                 <div className="p-4 text-slate-500">No hay ticket seleccionado.</div>
               ) : (
-                <div className="space-y-4 p-4">
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div className="flex flex-1 min-h-0 flex-col gap-4 p-4">
+                  <div className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <div>
                       <span className="text-slate-500">Fecha:</span>{" "}
                       <span className="font-medium">
@@ -257,19 +304,19 @@ export default function ModalVentasDia({
                   </div>
 
                   {selectedTicket.estado === "ERROR" && selectedTicket.ultimo_error && (
-                    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <div className="shrink-0 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                       {selectedTicket.ultimo_error}
                     </div>
                   )}
 
-                  <div className="overflow-hidden rounded-md border border-slate-200">
+                  <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-slate-200">
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-100">
+                      <thead className="sticky top-0 z-10 bg-slate-100">
                         <tr>
                           <th className="p-2 font-semibold text-slate-700">Producto</th>
                           <th className="p-2 font-semibold text-slate-700">Cant</th>
                           <th className="p-2 font-semibold text-slate-700">Precio</th>
-                          <th className="p-2 text-right font-semibold text-slate-700">Sub</th>
+                          <th className="p-2 text-right font-semibold text-slate-700">Subtotal</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 bg-white">
@@ -297,11 +344,33 @@ export default function ModalVentasDia({
                     </table>
                   </div>
 
-                  <div className="border-t border-slate-200 pt-3">
+                  <div className="shrink-0 border-t border-slate-200 pt-3">
                     <div className="flex items-center justify-between text-xl font-bold text-slate-800">
                       <span>TOTAL:</span>
                       <span>${Number(selectedTicket.total).toFixed(2)}</span>
                     </div>
+
+                    {puedeAnular(selectedTicket) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleAnular(selectedTicket)}
+                        disabled={anulandoId === selectedTicket.id}
+                        className="mt-2 w-full border-red-200 text-red-700 hover:bg-red-50"
+                      >
+                        {anulandoId === selectedTicket.id ? "Anulando..." : "Anular venta"}
+                      </Button>
+                    )}
+
+                    {selectedTicket.estado === "ANULADO" && (
+                      <p className="mt-2 text-center text-sm font-medium text-slate-500">
+                        Venta anulada
+                      </p>
+                    )}
+
+                    {errorAnulacion && (
+                      <p className="mt-2 text-center text-sm text-red-600">{errorAnulacion}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -309,7 +378,7 @@ export default function ModalVentasDia({
           </div>
         )}
 
-        <DialogFooter className="border-t border-slate-200 px-3 py-3">
+        <DialogFooter className="shrink-0 border-t border-slate-200 px-3 py-3">
           <Button
             type="button"
             variant="outline"

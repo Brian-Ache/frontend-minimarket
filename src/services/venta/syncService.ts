@@ -11,11 +11,12 @@ import api from "@/lib/api";
 import {
   upsertProductos,
   getEventosPendientes,
-  marcarEventoEnviado,
-  marcarEventoError,
+  marcarEventoEnviadoPorEntidad,
+  marcarEventoErrorPorEntidad,
   marcarEventoErrorTransitorio,
-  marcarEventoFalloDefinitivo,
+  marcarEventoFalloDefinitivoPorEntidad,
   marcarTicketLocalSincronizado,
+  marcarTicketLocalAnulado,
   type ProductoLocal,
 } from "./sqliteService";
 
@@ -122,17 +123,25 @@ async function enviarLoteBackend(): Promise<{ enviados: number; fallidos: number
       for (const resultado of data.resultados) {
         const uuid = resultado.uuid;
         if (resultado.estado === "OK" || resultado.requiereRevision) {
-          await marcarEventoEnviado(uuid);
-          // El historial del día refleja que la venta ya está en el backend
-          await marcarTicketLocalSincronizado(uuid);
+          await marcarEventoEnviadoPorEntidad(uuid, resultado.tipo);
+          if (resultado.tipo === "CREAR") {
+            // El historial del día refleja que la venta ya está en el backend
+            await marcarTicketLocalSincronizado(uuid);
+          } else if (resultado.tipo === "ANULAR") {
+            await marcarTicketLocalAnulado(uuid);
+          }
           enviados++;
         } else if (resultado.reintentable) {
-          await marcarEventoError(uuid, resultado.mensaje || "Error reintentable");
+          await marcarEventoErrorPorEntidad(uuid, resultado.tipo, resultado.mensaje || "Error reintentable");
           fallidos++;
         } else {
           // Reintentar no va a cambiar nada: el evento sale de la cola y queda
           // marcado en ERROR para que alguien lo mire, en vez de girar cada 15s
-          await marcarEventoFalloDefinitivo(uuid, resultado.mensaje || "Error no reintentable");
+          await marcarEventoFalloDefinitivoPorEntidad(
+            uuid,
+            resultado.tipo,
+            resultado.mensaje || "Error no reintentable"
+          );
           fallidos++;
         }
       }

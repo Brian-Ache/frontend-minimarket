@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getMovimientosPorRango, type MovimientoCaja } from "@/services/cajaService";
+import { getMovimientosPorRangoCompleto, type MovimientoCaja } from "@/services/cajaService";
 import { rangoDelDia } from "./fechas";
 
 interface EntradasProps {
@@ -23,10 +23,14 @@ export default function Entradas({ date, refresco }: EntradasProps) {
     setCargando(true);
     setError(null);
 
-    getMovimientosPorRango(desde, hasta, 0, 200)
+    getMovimientosPorRangoCompleto(desde, hasta)
       .then((movs) => {
         if (mounted) {
-          setEntradas(movs.filter((m) => m.tipo === "ENTRADA"));
+          setEntradas(
+            movs.filter(
+              (m) => m.tipo === "ENTRADA" && (m.origen === "MANUAL" || m.origen === "REVERSA")
+            )
+          );
         }
       })
       .catch((err) => {

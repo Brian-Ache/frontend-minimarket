@@ -92,7 +92,11 @@ export default function PageCorte() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:flex-1 md:min-h-0 md:overflow-hidden">
 
         {/* Columna 1: KPIs */}
-        <InfoBalance date={selectedDate} refresco={refresco} />
+        <InfoBalance
+          date={selectedDate}
+          refresco={refresco}
+          onVentaAnulada={() => setRefresco((r) => r + 1)}
+        />
 
         {/* Columna 2: Métodos de Pago */}
         <VentasPorTipo date={selectedDate} refresco={refresco} />

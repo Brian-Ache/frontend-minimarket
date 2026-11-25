@@ -410,7 +410,18 @@ export async function crearTicketLocal(ticket: TicketLocal, detalles: TicketDeta
 export async function marcarTicketLocalSincronizado(id: string): Promise<void> {
   const db = await Database.load(DB_NAME);
   await db.execute(
-    `UPDATE tickets_local SET estado = 'ENVIADO', enviado_en = datetime('now') WHERE id = ?`,
+    `UPDATE tickets_local SET estado = 'ENVIADO', enviado_en = datetime('now') WHERE id = ? AND estado <> 'ANULADO'`,
+    [id]
+  );
+  await db.close();
+}
+
+// [SQLite] Anulación optimista: el ticket sale del historial activo aunque el
+// evento ANULAR todavía esté en la cola.
+export async function marcarTicketLocalAnulado(id: string): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    "UPDATE tickets_local SET estado = 'ANULADO', ultimo_error = NULL WHERE id = ?",
     [id]
   );
   await db.close();
@@ -466,6 +477,62 @@ export async function marcarEventoEnviado(id: string): Promise<void> {
     `UPDATE evento_cola SET estado = 'ENVIADO', enviado_en = datetime('now') WHERE id = ?`,
     [id]
   );
+  await db.close();
+}
+
+// [SQLite] Marcar evento como enviado usando la entidad y el tipo de evento.
+// El backend devuelve el UUID de la entidad, no el id interno de evento_cola.
+export async function marcarEventoEnviadoPorEntidad(uuidEntidad: string, tipo: string): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    `UPDATE evento_cola SET estado = 'ENVIADO', enviado_en = datetime('now')
+     WHERE uuid_entidad = ? AND tipo = ? AND estado = 'PENDIENTE'`,
+    [uuidEntidad, tipo]
+  );
+  await db.close();
+}
+
+// [SQLite] Marcar evento con error reintentable usando la entidad y el tipo.
+export async function marcarEventoErrorPorEntidad(
+  uuidEntidad: string,
+  tipo: string,
+  error: string
+): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    `UPDATE evento_cola SET intentos = intentos + 1, ultimo_error = ?
+     WHERE uuid_entidad = ? AND tipo = ? AND estado = 'PENDIENTE'`,
+    [error, uuidEntidad, tipo]
+  );
+  await db.close();
+}
+
+// [SQLite] Error definitivo usando la entidad y el tipo de evento.
+export async function marcarEventoFalloDefinitivoPorEntidad(
+  uuidEntidad: string,
+  tipo: string,
+  error: string
+): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    `UPDATE evento_cola SET estado = 'ERROR', intentos = intentos + 1, ultimo_error = ?
+     WHERE uuid_entidad = ? AND tipo = ? AND estado = 'PENDIENTE'`,
+    [error, uuidEntidad, tipo]
+  );
+
+  if (tipo === "ANULAR") {
+    await db.execute(
+      `UPDATE tickets_local SET estado = 'ERROR', intentos = intentos + 1, ultimo_error = ? WHERE id = ?`,
+      [error, uuidEntidad]
+    );
+  } else if (tipo === "CREAR") {
+    await db.execute(
+      `UPDATE tickets_local SET estado = 'ERROR', intentos = intentos + 1, ultimo_error = ?
+       WHERE id = ? AND estado <> 'ANULADO'`,
+      [error, uuidEntidad]
+    );
+  }
+
   await db.close();
 }
 

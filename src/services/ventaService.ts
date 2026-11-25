@@ -37,6 +37,33 @@ export async function getVentasPorFecha(
   return data.content;
 }
 
+/** Todas las ventas del rango, paginando de a 100 (techo del backend). */
+export async function getVentasPorFechaCompleto(
+  desde: string,
+  hasta: string
+): Promise<Venta[]> {
+  const size = 100;
+  const todas: Venta[] = [];
+  let page = 0;
+
+  while (true) {
+    const { data } = await api.get<PaginatedResponse<Venta>>("/api/ventas/v1/fecha", {
+      params: { desde, hasta, page, size },
+    });
+
+    todas.push(...data.content);
+
+    if (data.content.length === 0 || page + 1 >= data.totalPages) break;
+    page++;
+  }
+
+  return todas;
+}
+
+export async function anularVenta(id: string): Promise<void> {
+  await api.delete(`/api/ventas/v1/${id}`);
+}
+
 /** Desglose de ventas por método de pago de un día. fecha: YYYY-MM-DD local. */
 export interface ResumenVentas {
   fecha: string;

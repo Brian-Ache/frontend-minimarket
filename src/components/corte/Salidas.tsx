@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getMovimientosPorRango, type MovimientoCaja } from "@/services/cajaService";
+import { getMovimientosPorRangoCompleto, type MovimientoCaja } from "@/services/cajaService";
 import { rangoDelDia } from "./fechas";
 
 interface SalidasProps {
@@ -10,6 +10,11 @@ interface SalidasProps {
 function horaDe(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function descripcionDe(salida: MovimientoCaja): string {
+  if (salida.origen === "REVERSA") return "Anulación de venta";
+  return salida.motivo ?? "—";
 }
 
 export default function Salidas({ date, refresco }: SalidasProps) {
@@ -23,7 +28,7 @@ export default function Salidas({ date, refresco }: SalidasProps) {
     setCargando(true);
     setError(null);
 
-    getMovimientosPorRango(desde, hasta, 0, 200)
+    getMovimientosPorRangoCompleto(desde, hasta)
       .then((movs) => {
         if (mounted) {
           setSalidas(movs.filter((m) => m.tipo === "SALIDA"));
@@ -73,7 +78,7 @@ export default function Salidas({ date, refresco }: SalidasProps) {
                     {horaDe(salida.fecha)}
                   </span>
                   <span className="text-sm text-slate-700 font-medium truncate">
-                    {salida.motivo ?? "—"}
+                    {descripcionDe(salida)}
                   </span>
                 </div>
 
