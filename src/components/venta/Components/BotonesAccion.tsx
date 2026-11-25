@@ -43,11 +43,12 @@ export default function BotonesAccion({
 }: Props) {
 
   return (
-    <div className="flex gap-2 flex-wrap border-0 select-none">
+    <div className="grid grid-cols-2 gap-2 border-0 select-none sm:flex sm:flex-wrap">
       
       {/* Botón Artículo Común */}
       <Button variant="secondary" onClick={() => setModales.comun(true)}>
-        Agregar Producto (Ctrl+P)
+        <span className="sm:hidden">Producto común</span>
+        <span className="hidden sm:inline">Agregar Producto (Ctrl+P)</span>
       </Button>
       
       {modales.comun && (
@@ -61,7 +62,8 @@ export default function BotonesAccion({
       
       {/* Botón Buscar Producto */}
       <Button variant="secondary" onClick={() => setModales.buscar(true)}>
-        F10 Buscar
+        <span className="sm:hidden">Buscar</span>
+        <span className="hidden sm:inline">F10 Buscar</span>
       </Button>
       
       {modales.buscar && (
@@ -73,11 +75,12 @@ export default function BotonesAccion({
         />
       )}
       
-      <Button variant="secondary">F11 Mayoreo</Button>
+      <Button variant="secondary"><span className="sm:hidden">Mayoreo</span><span className="hidden sm:inline">F11 Mayoreo</span></Button>
 
       {/* Botón Entradas */}
       <Button variant="secondary" onClick={() => setModales.entrada(true)}>
-        F7 Entradas
+        <span className="sm:hidden">Entradas</span>
+        <span className="hidden sm:inline">F7 Entradas</span>
       </Button>
       
       {modales.entrada && (
@@ -90,7 +93,8 @@ export default function BotonesAccion({
 
       {/* Botón Salidas */}
       <Button variant="secondary" onClick={() => setModales.salida(true)}>
-        F8 Salidas
+        <span className="sm:hidden">Salidas</span>
+        <span className="hidden sm:inline">F8 Salidas</span>
       </Button>
       
       {modales.salida && (
@@ -107,7 +111,8 @@ export default function BotonesAccion({
         disabled={!productoSeleccionadoId}
         onClick={() => productoSeleccionadoId && onEliminar(productoSeleccionadoId)}
       >
-        DEL Borrar Art.
+        <span className="sm:hidden">Borrar artículo</span>
+        <span className="hidden sm:inline">DEL Borrar Art.</span>
       </Button>
     </div>
   );

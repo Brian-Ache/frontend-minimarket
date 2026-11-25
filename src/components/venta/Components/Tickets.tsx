@@ -35,7 +35,7 @@ export default function Tickets({
   return (
     <div className="h-full flex flex-col min-h-0 p-1 select-none">
       {/* Tabs */}
-      <div className="flex items-end shrink-0">
+      <div className="flex items-end shrink-0 overflow-x-auto">
         {/*recorre el array ticket y por cada ticket retorna un boton que referencia a ese ticket*/}
         {tickets.map((ticket) => {
           const isActive = ticket.id === activeTicket;
@@ -50,7 +50,7 @@ export default function Tickets({
                 }, 0);
               }}
               className={`
-                px-4 py-1 text-sm font-medium
+                shrink-0 px-3 py-2 text-sm font-medium sm:px-4 sm:py-1
                 border border-border relative rounded-t-md transition-colors
                 ${
                   isActive
@@ -66,7 +66,40 @@ export default function Tickets({
       </div>
 
       {/* Tabla con alturas y anchos fijos para evitar "saltos" */}
-      <div className="flex-1 min-h-0 overflow-auto bg-background border border-border rounded-b-md table-fixed-layout">
+      <div className="flex-1 min-h-0 overflow-auto bg-background border border-border rounded-b-md">
+        <div className="divide-y divide-slate-100 md:hidden">
+          {productosDelTicket.map((prod) => {
+            const isSelected = productoSeleccionadoId === prod.id;
+
+            return (
+              <button
+                key={prod.id}
+                type="button"
+                onClick={() => onSeleccionarProducto(prod.id)}
+                className={`block w-full p-3 text-left ${
+                  isSelected ? "bg-blue-100 text-blue-950" : "hover:bg-slate-50"
+                }`}
+              >
+                <span className="block truncate font-medium">{prod.nombre}</span>
+                <span className="mt-1 flex justify-between gap-2 text-xs text-slate-600">
+                  <span className="truncate">{prod.id}</span>
+                  <span className="shrink-0">
+                    ${prod.precio.toLocaleString()} × {prod.cantidad}
+                  </span>
+                </span>
+                <span className="mt-1 block text-right text-sm font-semibold">
+                  ${(prod.precio * prod.cantidad).toLocaleString()}
+                </span>
+              </button>
+            );
+          })}
+          {productosDelTicket.length === 0 && (
+            <p className="p-8 text-center text-sm italic text-slate-400">
+              Este ticket no tiene productos.
+            </p>
+          )}
+        </div>
+        <div className="hidden md:block">
         {/*table-fixed congela el ancho de las columnas */}
         <table className="w-full text-sm table-fixed"> 
           <thead className="bg-slate-100 sticky top-0 shadow-sm z-10">
@@ -115,6 +148,7 @@ export default function Tickets({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

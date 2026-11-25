@@ -67,14 +67,15 @@ export default function FooterVenta({
 }: Props) {
 
   return (
-    <div className="flex flex-col gap-2 shrink-0 overflow-hidden select-none">
+    <div className="flex shrink-0 flex-col gap-2 overflow-hidden select-none">
       {/* FILA 1 */}
       <div>
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid grid-cols-2 gap-2 sm:flex">
             {/* Botón Cambiar Ticket */}
             <Button variant="secondary" onClick={() => setOpenModalNavegarTickets(true)}>
-              F5 - Cambiar Ticket
+              <span className="sm:hidden">Cambiar ticket</span>
+              <span className="hidden sm:inline">F5 - Cambiar Ticket</span>
             </Button>
 
             {openModalNavegarTickets && (
@@ -90,7 +91,8 @@ export default function FooterVenta({
             <Button variant="secondary" onClick={()=> {setOpenModalAgregarTicket(true);
               console.log("hice click sobre el boton de nuevo tickets",openModalAgregarTicket);
             }}>
-              F6 - Nuevo Ticket
+              <span className="sm:hidden">Nuevo ticket</span>
+              <span className="hidden sm:inline">F6 - Nuevo Ticket</span>
             </Button>
             {openModalAgregarTicket && (
               <ModalAgregarTicket
@@ -102,41 +104,50 @@ export default function FooterVenta({
             )}
 
             <Button variant="destructive" onClick={() => eliminar(activeTicket)}>
-              Eliminar
+              <span className="sm:hidden">Eliminar</span>
+              <span className="hidden sm:inline">Eliminar ticket</span>
             </Button>
             {/* [SQLite] Botón Cobrar conectado a la cola de tickets */}
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCobrar} disabled={!sesion}>
+            <Button className="col-span-2 bg-emerald-600 text-white hover:bg-emerald-700 sm:col-span-1" onClick={onCobrar} disabled={!sesion}>
               {!sesion && (
-                <>La caja no esta abierta para vender</>
+                <>
+                  <span className="sm:hidden">Caja cerrada</span>
+                  <span className="hidden sm:inline">La caja no esta abierta para vender</span>
+                </>
               )}
               {sesion && (
-                <>F12 - Cobrar</>
+                <>
+                  <span className="sm:hidden">Cobrar</span>
+                  <span className="hidden sm:inline">F12 - Cobrar</span>
+                </>
               )}
             </Button>
             
           </div>
 
           {/*Simplificación: Usamos la prop 'total' directo, no hace falta un estado local duplicado */}
-          <div className="text-4xl lg:text-5xl font-bold text-blue-600">
+          <div className="text-right text-3xl font-bold text-blue-600 sm:text-4xl lg:text-5xl">
             ${total.toFixed(2)}
           </div>
         </div>
 
         {/* FILA 2 */}
-        <div className="flex justify-between text-sm mt-1">
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-sm">
           <div  className="flex gap-2">
             <span className="text-muted-foreground block text-xs">Cantidad productos:</span>
             <div className="">{cantidadProcductosTicket}</div>
           </div>
           <div className="flex gap-2">
-            <Button className="bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs px-3">
-              Reimprimir Último Ticket
+            <Button className="bg-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-300">
+              <span className="sm:hidden">Reimprimir</span>
+              <span className="hidden sm:inline">Reimprimir Último Ticket</span>
             </Button>
-            <Button className="bg-slate-300 text-slate-800 hover:bg-slate-400 text-xs px-3" onClick={()=> {
+            <Button className="bg-slate-300 px-3 text-xs text-slate-800 hover:bg-slate-400" onClick={()=> {
                             setOpenModalVentasDia(true);
                             console.log("hice click en abrir modal ventas", openModalVentasDia);}
                           }>
-              Ventas del día
+              <span className="sm:hidden">Ventas hoy</span>
+              <span className="hidden sm:inline">Ventas del día</span>
             </Button>
             {openModalVentasDia && (
               <ModalVentasDia

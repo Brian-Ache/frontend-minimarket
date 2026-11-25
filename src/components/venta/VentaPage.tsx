@@ -348,7 +348,7 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el �
 ///////////////////////////////////////////////////////////////////////////////
 
   return (
-    <div className="w-full h-full flex flex-col gap-2 p-3 overflow-hidden">
+    <div className="w-full h-full flex flex-col gap-2 p-2 sm:p-3 overflow-hidden">
       {/* Barra de búsqueda conectada a la función dinámica */}
       <BarraBusqueda onAgregar={agregarProductoPorCodigo} inputRef={barraBusquedaRef} />
 
