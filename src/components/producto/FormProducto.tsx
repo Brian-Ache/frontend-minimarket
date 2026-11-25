@@ -43,11 +43,11 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
   };
 
   return (
-    <div className="grid grid-cols-5 gap-2">
-      <Input className="col-span-1" placeholder="Código de barras" value={form.barcode}
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <Input className="min-w-0" placeholder="Código de barras" value={form.barcode}
         onChange={(e) => handleChange("barcode", e.target.value)} />
       <Input
-          className="col-span-1 capitalize"
+          className="min-w-0 capitalize"
           placeholder="Nombre"
           value={form.nombre}
           onChange={(e) => {
@@ -58,19 +58,19 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
               handleChange("nombre", capitalizado);
           }}
       />
-      <Input className="col-span-1" placeholder="Precio compra" type="number" value={form.costo || ""}
+      <Input className="min-w-0" placeholder="Precio compra" type="number" value={form.costo || ""}
         onChange={(e) => handleChange("costo", Number(e.target.value))} />
-      <Input className="col-span-1" placeholder="Margen" type="number" value={form.margen || ""}
+      <Input className="min-w-0" placeholder="Margen" type="number" value={form.margen || ""}
         onChange={(e) => handleChange("margen", parseFloat(e.target.value) || 0)} />
       <Input
-          className="col-span-1"
+          className="min-w-0"
           placeholder="Precio venta"
           type="number"
           value={form.precio || ""}
           onChange={(e) => handleChange("precio", Number(e.target.value))}
       />
 
-      <div className="col-span-1 grid gap-2">
+      <div className="grid min-w-0 gap-2 lg:col-span-2">
         <Label className="text-slate-600">Categoría</Label>
         <div className="flex items-center gap-1">
           <Select value={form.idCategoria ?? ""}
@@ -94,7 +94,7 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
         </div>
       </div>
 
-      <div className="col-span-2 grid gap-2">
+      <div className="grid min-w-0 gap-2">
         <Label className="text-slate-600">Proveedor</Label>
         <Select value={form.idProveedor ?? ""}
           onValueChange={(v) => handleChange("idProveedor", v)}>
@@ -113,14 +113,14 @@ export default function FormProducto({ onCreated }: { onCreated?: () => void }) 
         </label>
       </div> */}
 
-      <div className="col-span-1 flex items-end justify-between gap-2">
-        <Button className="bg-emerald-600 text-white" onClick={handleGuardar} disabled={loading}>
+      <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-5 lg:justify-end">
+        <Button className="flex-1 bg-emerald-600 text-white sm:flex-none" onClick={handleGuardar} disabled={loading}>
           {loading ? "Guardando..." : "Guardar"}
         </Button>
-        <Button variant="secondary" onClick={reset}>Limpiar</Button>
+        <Button className="flex-1 sm:flex-none" variant="secondary" onClick={reset}>Limpiar</Button>
       </div>
 
-      {error && <p className="col-span-6 text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-sm text-red-500 sm:col-span-2 lg:col-span-5">{error}</p>}
 
       <ModalCategorias
         open={modalCategorias}

@@ -113,7 +113,8 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
-    const row = container.querySelector<HTMLElement>(`tbody tr[data-index="${selectedIndex}"]`);
+    const row = Array.from(container.querySelectorAll<HTMLElement>(`[data-index="${selectedIndex}"]`))
+      .find((element) => element.getClientRects().length > 0);
     if (!row) return;
     const header = container.querySelector<HTMLElement>("thead");
     const headerH = header?.offsetHeight ?? 0;
@@ -198,18 +199,19 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
   const totalPagesToShow = Math.min(totalPages, 10);
 
   return (
-    <div className="h-full flex flex-col border border-border rounded-md overflow-hidden">
+    <div className="flex min-h-[65dvh] flex-col overflow-hidden rounded-md border border-border md:h-full md:min-h-0">
 
       {/* Filtros */}
-      <div className="p-2 flex gap-2 bg-slate-100 flex-wrap">
+      <div className="grid shrink-0 grid-cols-1 gap-2 bg-slate-100 p-2 sm:grid-cols-2 lg:flex lg:flex-wrap">
         <Input
           placeholder="Buscar producto..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          className="sm:col-span-2 lg:w-64"
         />
 
         {/* Selector de Proveedor dinamico */}
-        <div className="grid gap-2">
+        <div className="grid min-w-0 gap-1">
           <Label className="text-slate-600">Proveedor</Label>
           <Select
             value={proveedorId ?? "__ALL__"}
@@ -230,7 +232,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
         </div>
 
         {/* Selector de Categoria dinamico */}
-        <div className="grid gap-2">
+        <div className="grid min-w-0 gap-1">
           <Label className="text-slate-600">Categoría</Label>
           <Select
             value={categoriaId ?? "__ALL__"}
@@ -252,13 +254,47 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
       </div>
 
       {/* Tabla de productos */}
-      <div ref={scrollRef} className="flex-1 overflow-auto">
+      <div ref={scrollRef} className="min-h-[45dvh] flex-none overflow-visible md:min-h-0 md:flex-1 md:overflow-auto">
         {loading ? (
           <div className="p-4 text-center text-slate-500">Cargando productos...</div>
         ) : error ? (
           <div className="p-4 text-center text-red-500">{error}</div>
         ) : (
-          <table className="w-full text-sm">
+          <>
+          <div className="divide-y divide-border md:hidden">
+            {productos.map((prod, index) => (
+              <button
+                key={prod.id}
+                type="button"
+                data-index={index}
+                onClick={() => {
+                  setSelectedIndex(index);
+                  setOpenModal(true);
+                }}
+                className={`block w-full p-3 text-left ${
+                  index === selectedIndex ? "bg-blue-100" : "hover:bg-slate-50"
+                }`}
+              >
+                <span className="block truncate font-medium">{prod.nombre}</span>
+                <span className="mt-1 flex justify-between gap-2 text-xs text-slate-600">
+                  <span className="truncate">{prod.barcode}</span>
+                  <span className="shrink-0">Stock: {stockMap.get(prod.id) ?? "-"}</span>
+                </span>
+                <span className="mt-1 flex justify-between gap-2 text-sm">
+                  <span>Costo: ${prod.costo ?? "-"}</span>
+                  <span className="font-semibold">Venta: ${prod.precio}</span>
+                </span>
+                <span className="mt-1 block truncate text-xs text-slate-500">
+                  {prod.categoria?.nombre ?? "Sin categoría"} · {prod.proveedor?.nombre ?? "Sin proveedor"}
+                </span>
+              </button>
+            ))}
+            {productos.length === 0 && (
+              <p className="p-4 text-center text-sm text-slate-400">No se encontraron productos</p>
+            )}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
+          <table className="w-full min-w-[760px] text-sm">
             <thead className="bg-slate-200 sticky top-0">
               <tr>
                 <th className="p-2 text-left">Codigo</th>
@@ -305,15 +341,17 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
               )}
             </tbody>
           </table>
+          </div>
+          </>
         )}
       </div>
 
       {/* Paginacion */}
-      <div className="p-2 border-t border-border bg-slate-50 flex items-center justify-between text-sm">
-        <span className="text-slate-500">
+      <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-slate-50 p-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-center text-slate-500 sm:text-left">
           {totalElements} resultado{totalElements !== 1 ? "s" : ""}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1">
           <Button
             variant="outline"
             size="sm"
@@ -322,9 +360,13 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
           >
             Anterior
           </Button>
+          <span className="px-1 text-slate-600 sm:hidden">
+            {totalPages > 0 ? `${currentPage + 1}/${totalPages}` : "0/0"}
+          </span>
           {Array.from({ length: totalPagesToShow }, (_, i) => i).map((i) => (
             <Button
               key={i}
+              className="hidden sm:inline-flex"
               variant={i === currentPage ? "default" : "outline"}
               size="sm"
               onClick={() => setCurrentPage(i)}
@@ -345,7 +387,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
 
       {/* Modal para modificar producto */}
       <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent className="sm:max-w-[650px]">
+        <DialogContent className="max-h-[90dvh] w-[calc(100%_-_1rem)] max-w-[650px] overflow-y-auto rounded-lg p-4 sm:w-full sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Modificar Producto</DialogTitle>
             <DialogDescription>
@@ -354,12 +396,12 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
           </DialogHeader>
 
           {selectedProduct && (
-            <div className="grid grid-cols-6 gap-4 py-4 items-start">
-              <div className="col-span-3 grid gap-2">
+            <div className="grid grid-cols-1 items-start gap-4 py-4 sm:grid-cols-6">
+              <div className="grid gap-2 sm:col-span-3">
                 <Label className="text-slate-600">Código de barras</Label>
                 <Input value={modalBarcode} onChange={(e) => setModalBarcode(e.target.value)} />
               </div>
-              <div className="col-span-3 grid gap-2">
+              <div className="grid gap-2 sm:col-span-3">
                 <Label className="text-slate-600">Nombre</Label>
                 <Input
                     className="col-span-1 capitalize"
@@ -376,7 +418,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
 
               </div>
 
-              <div className="col-span-2 grid gap-2">
+              <div className="grid gap-2 sm:col-span-2">
                 <Label className="text-slate-600">Precio compra</Label>
                 <Input
                   type="number"
@@ -385,7 +427,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
                 />
               </div>
 
-              <div className="col-span-2 grid gap-2">
+              <div className="grid gap-2 sm:col-span-2">
                 <Label className="text-slate-600">Margen (%)</Label>
                 <Input
                   type="number"
@@ -394,7 +436,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
                 />
               </div>
 
-              <div className="col-span-2 grid gap-2">
+              <div className="grid gap-2 sm:col-span-2">
                 <Label className="text-slate-600">Precio venta</Label>
                 <Input
                   type="number"
@@ -403,7 +445,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
                 />
               </div>
 
-              <div className="col-span-2 grid gap-2">
+              <div className="grid gap-2 sm:col-span-2">
                 <Label className="text-slate-600">Categoría</Label>
                 <Select value={modalCategoriaId ?? ""} onValueChange={(v) => setModalCategoriaId(v)}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
@@ -414,7 +456,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-4 grid gap-2">
+              <div className="grid gap-2 sm:col-span-4">
                 <Label className="text-slate-600">Proveedor</Label>
                 <Select value={modalProveedorId ?? ""} onValueChange={(v) => setModalProveedorId(v)}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
@@ -434,20 +476,20 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
                 </Button>
               </div>
 
-              <div className="col-span-2 grid gap-2">
+              <div className="grid gap-2 sm:col-span-2">
                 <Label className="text-slate-600">Cantidad (Stock)</Label>
                 <Input type="number" value={modalCantidad} onChange={(e) => setModalCantidad(Number(e.target.value))} />
               </div>
-              <div className="col-span-1 flex items-center gap-2 pt-6">
+              <div className="flex items-center gap-2 sm:col-span-6 sm:pt-2">
                 <input type="checkbox" checked={modalManejaLotes} onChange={(e) => setModalManejaLotes(e.target.checked)} />
                 <Label className="text-slate-600">Maneja lotes</Label>
               </div>
 
-              {modalError && <p className="col-span-6 text-red-500 text-sm">{modalError}</p>}
+              {modalError && <p className="text-sm text-red-500 sm:col-span-6">{modalError}</p>}
             </div>
           )}
 
-          <DialogFooter className="px-6 flex flex-row justify-between sm:justify-between items-center w-full">
+          <DialogFooter className="flex w-full flex-col-reverse items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <Button
               variant="destructive"
               onClick={eliminar}
@@ -462,7 +504,8 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
                 variant="outline"
                 onClick={() => setOpenModal(false)}
               >
-                Cancelar
+                <span className="sm:hidden">Cancelar</span>
+                <span className="hidden sm:inline">Cancelar</span>
               </Button>
 
               <Button
@@ -470,7 +513,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
                 onClick={guardar}
                 disabled={modalSaving || modalDeleting}
               >
-                {modalSaving ? "Guardando..." : "Guardar Cambios"}
+                {modalSaving ? "Guardando..." : "Guardar"}
               </Button>
             </div>
           </DialogFooter>
@@ -480,7 +523,7 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
       {/* Modal de historial de proveedores */}
       {selectedProduct && (
         <Dialog open={openHistorial} onOpenChange={setOpenHistorial}>
-          <DialogContent className="sm:max-w-[650px]">
+          <DialogContent className="max-h-[90dvh] w-[calc(100%_-_1rem)] max-w-[650px] overflow-y-auto rounded-lg p-4 sm:w-full sm:p-6">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">Historial de proveedores</DialogTitle>
               <DialogDescription>
@@ -488,8 +531,8 @@ export default function TablaProductos({ refreshKey, onRefresh }: TablaProductos
               </DialogDescription>
             </DialogHeader>
 
-            <div className="max-h-[400px] overflow-auto">
-              <table className="w-full text-sm">
+            <div className="max-h-[50dvh] overflow-auto">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-slate-200 sticky top-0">
                   <tr>
                     <th className="p-2 text-left">Proveedor</th>

@@ -121,7 +121,7 @@ export default function ModalCategorias({ open, onClose, onCreada }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-[860px]">
+      <DialogContent className="max-h-[90dvh] w-[calc(100%_-_1rem)] max-w-[860px] overflow-y-auto rounded-lg p-4 sm:w-full sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Categorías</DialogTitle>
           <DialogDescription>
@@ -152,7 +152,8 @@ export default function ModalCategorias({ open, onClose, onCreada }: Props) {
           />
         </div>
 
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
           <thead className="bg-slate-200">
             <tr>
               <th className="p-2 text-left">Nombre</th>
@@ -200,6 +201,7 @@ export default function ModalCategorias({ open, onClose, onCreada }: Props) {
             )}
           </tbody>
         </table>
+        </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
