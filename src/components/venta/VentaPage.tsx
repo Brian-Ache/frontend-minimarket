@@ -377,7 +377,7 @@ elimina el ticket atual y cambia al siguiente o al anterior si el actual es el Ã
         openModalVentasDia={modales.ventasDia}
         setOpenModalVentasDia={(open)=>toggleModal("ventasDia", open)}
         sesion={sesion}
-        loading={loading}
+        //loading={loading}
       />
     </div>
   );
