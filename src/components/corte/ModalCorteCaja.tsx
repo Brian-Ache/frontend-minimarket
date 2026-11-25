@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { getSesionActiva, cerrarSesion, type SesionActiva } from "@/services/cajaService";
+import { useSesion } from "@/context/SesionContext";
 
 interface ModalCorteCajaProps {
   open: boolean;
@@ -20,10 +20,10 @@ interface ModalCorteCajaProps {
 
 /**
  * Cierre de caja compartido: lo usan Configuración y la página de Corte.
- * Al abrir busca la sesión activa (404 → no hay caja abierta) y cierra con saldoReal.
+ * Usa la sesión del contexto, que puede ser local (offline) o remota.
  */
 export default function ModalCorteCaja({ open, onOpenChange, onCerrado }: ModalCorteCajaProps) {
-  const [sesion, setSesion] = useState<SesionActiva | null>(null);
+  const { sesion, cargar, cerrarCaja } = useSesion();
   const [saldoReal, setSaldoReal] = useState("");
   const [cerrando, setCerrando] = useState(false);
   const [error, setError] = useState("");
@@ -33,32 +33,19 @@ export default function ModalCorteCaja({ open, onOpenChange, onCerrado }: ModalC
     if (!open) return;
 
     let mounted = true;
-    setSesion(null);
     setSaldoReal("");
     setError("");
     setCargando(true);
 
-    getSesionActiva()
-      .then((sesionActiva) => {
-        if (mounted) setSesion(sesionActiva);
-      })
-      .catch((err) => {
-        if (!mounted) return;
-        const response = (err as { response?: { status?: number; data?: { error?: string } } }).response;
-        if (response?.status === 404) {
-          setError("No hay caja abierta para cerrar");
-        } else {
-          setError(response?.data?.error || "Error al buscar la caja abierta");
-        }
-      })
-      .finally(() => {
-        if (mounted) setCargando(false);
-      });
+    // Releer la sesión: puede haber quedado abierta localmente sin conexión.
+    void cargar().finally(() => {
+      if (mounted) setCargando(false);
+    });
 
     return () => {
       mounted = false;
     };
-  }, [open]);
+  }, [open, cargar]);
 
   const confirmarCierre = async () => {
     const monto = parseFloat(saldoReal);
@@ -70,11 +57,15 @@ export default function ModalCorteCaja({ open, onOpenChange, onCerrado }: ModalC
     setCerrando(true);
     setError("");
     try {
-      await cerrarSesion(monto, 0);
+      await cerrarCaja(monto, 0);
       onOpenChange(false);
       onCerrado();
     } catch (err) {
-      setError((err as { response?: { data?: { error?: string } } }).response?.data?.error || "Error al cerrar la caja");
+      const mensaje =
+        (err as { response?: { data?: { error?: string } } }).response?.data?.error ||
+        (err as Error).message ||
+        "Error al cerrar la caja";
+      setError(mensaje);
     } finally {
       setCerrando(false);
     }
@@ -90,6 +81,14 @@ export default function ModalCorteCaja({ open, onOpenChange, onCerrado }: ModalC
               <>
                 Sesión abierta desde el {new Date(sesion.fechaApertura).toLocaleString()}.
                 Saldo inicial: ${sesion.saldoInicial}
+                {sesion.origen === "OFFLINE" && (
+                  <>
+                    <br />
+                    <span className="text-amber-600">
+                      Sesión abierta sin conexión: el corte se sincronizará al reconectar.
+                    </span>
+                  </>
+                )}
                 <br />
               </>
             )}
@@ -118,6 +117,9 @@ export default function ModalCorteCaja({ open, onOpenChange, onCerrado }: ModalC
             disabled={cargando}
             autoFocus
           />
+          {!cargando && !sesion && !error && (
+            <p className="text-sm text-red-500">No hay caja abierta para cerrar</p>
+          )}
           {error && <p className="text-sm text-red-500">{error}</p>}
         </div>
 
@@ -128,7 +130,7 @@ export default function ModalCorteCaja({ open, onOpenChange, onCerrado }: ModalC
           <Button
             variant="destructive"
             onClick={confirmarCierre}
-            disabled={saldoReal === "" || cerrando || cargando}
+            disabled={saldoReal === "" || cerrando || cargando || !sesion}
           >
             {cerrando ? "Cerrando..." : "Confirmar Cierre"}
           </Button>

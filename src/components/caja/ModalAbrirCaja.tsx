@@ -34,7 +34,7 @@ export default function ModalAbrirCaja() {
       setSaldoInicial("");
     } catch (err: any) {
       const status = err.response?.status;
-      const msg = err.response?.data?.error || "Error al abrir la caja";
+      const msg = err.response?.data?.error || err.message || "Error al abrir la caja";
       if (status === 409) {
         setError("Ya hay una caja abierta. Debés cerrarla primero.");
       } else if (status === 404) {
@@ -61,6 +61,8 @@ export default function ModalAbrirCaja() {
     clearJustLoggedIn();
   };
 
+  if (!isAuthenticated || !justLoggedIn || sesion) return null;
+
   if (loading) return (
     <Dialog open>
       <DialogContent className="sm:max-w-sm">
@@ -73,7 +75,6 @@ export default function ModalAbrirCaja() {
       </DialogContent>
     </Dialog>
   );
-  if (sesion || !isAuthenticated || !justLoggedIn) return null;
 
   return (
     <Dialog open onOpenChange={() => {}}>
@@ -87,6 +88,14 @@ export default function ModalAbrirCaja() {
           <DialogTitle>Abrir Caja</DialogTitle>
           <DialogDescription>
             Ingresá el efectivo inicial en caja para comenzar a vender.
+            {typeof navigator !== "undefined" && !navigator.onLine && (
+              <>
+                <br />
+                <span className="text-amber-600">
+                  Sin conexión: la caja se abrirá localmente y se sincronizará al reconectar.
+                </span>
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 

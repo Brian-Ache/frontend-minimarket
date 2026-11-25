@@ -11,7 +11,7 @@ import ModalEventosCola from "./modals/ModalEventosCola";
 
 
 export default function ConfiguracionPage() {
-  const { cerrar, abrir } = useSesion();
+  const { abrir } = useSesion();
   const { clearJustLoggedIn } = useAuth();
   const [cargando, setCargando] = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -42,7 +42,7 @@ export default function ConfiguracionPage() {
       clearJustLoggedIn();
       setSaldoInicial("");
     } catch (err: any) {
-      const msg = err.response?.data?.error || "Error al abrir la caja";
+      const msg = err.response?.data?.error || err.message || "Error al abrir la caja";
       console.error("Error al abrir caja:", msg);
       setErrorApertura(msg);
     } finally {
@@ -121,6 +121,11 @@ export default function ConfiguracionPage() {
           <span className="text-sm text-red-500">{errorApertura}</span>
         )}
       </div>
+      {typeof navigator !== "undefined" && !navigator.onLine && (
+        <p className="mx-2 text-sm text-amber-600">
+          Sin conexión: la caja se abrirá localmente y se sincronizará al reconectar.
+        </p>
+      )}
       <Button
         className="m-2"
         variant="destructive"
@@ -142,7 +147,6 @@ export default function ConfiguracionPage() {
         onOpenChange={setModalCorteAbierto}
         onCerrado={() => {
           console.log("Caja cerrada exitosamente");
-          cerrar();
           clearJustLoggedIn();
           setMensajeSync("Caja cerrada exitosamente");
         }}

@@ -151,7 +151,7 @@ export default function ModalVentasDia({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-5xl rounded-xl border border-slate-200 bg-white p-0 text-slate-800 shadow-xl">
+      <DialogContent className="!max-w-[45vw] rounded-xl border border-slate-200 bg-white p-0 text-slate-800 shadow-xl">
         <DialogHeader className="border-b border-slate-200 px-4 py-3">
           <DialogTitle className="text-2xl font-bold tracking-tight text-slate-800">
             Ventas del Día

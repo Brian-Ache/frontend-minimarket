@@ -4,6 +4,68 @@
 
 ---
 
+### Caja — Apertura y cierre offline
+
+**Resumen**: abrir caja requería `POST /api/caja/v1/abrir`; sin internet no se podía
+comenzar a vender. Ahora la sesión se persiste en SQLite, se abre/cierra localmente cuando
+no hay red y se encolan `ABRIR_SESION` / `CERRAR_SESION`, que el sync del backend ya soporta.
+
+#### `src/services/venta/sqliteService.ts`
+
+- Nueva tabla `sesion_local` (una sola fila `ABIERTA`): espejo local del turno, con el mismo
+  UUID que el backend para que los eventos sean idempotentes.
+- +`guardarSesionLocal()`, `getSesionLocalActiva()`, `marcarSesionLocalCerrada()`.
+- +`tieneEventosPendientesDeSesion()`: detecta eventos de la cola y tickets locales sin
+  sincronizar para decidir si conservar la sesión local al reconectar.
+- +`SQLITE_READY_EVENT`: la inicialización de tablas corre en un efecto de `App`; el evento
+  permite a `SesionContext` reintentar la lectura después de crearlas.
+
+#### `src/services/venta/cajaLocalService.ts` (NUEVO)
+
+- `abrirSesionLocal()`: UUIDv7 + fecha local naive + `ABRIR_SESION` en `evento_cola`.
+- `cerrarSesionLocal()`: `CERRAR_SESION` con `saldoFinal`, `montoRetirado` y
+  `observaciones`, y marca la sesión local como cerrada.
+- `cachearSesionRemota()`: guarda la sesión del backend para poder seguir vendiendo si se
+  corta la conexión o se reinicia la app.
+
+#### `src/lib/sequence.ts` (NUEVO)
+
+- `nextSecuencia()`: contador monótono persistido en `localStorage`. El backend ordena por
+  `ocurridoEn` y desempata por `secuencia`; así `ABRIR_SESION` queda antes que sus tickets.
+- `ventaLocalService` usa la misma secuencia para los eventos `CREAR`.
+
+#### `src/context/SesionContext.tsx`
+
+- `cargar()` lee primero la sesión local; con red, vacía la cola y reconcilia con
+  `GET /api/caja/v1/sesion-activa` (cachea la remota).
+- Si la local tiene eventos pendientes y el backend muestra otra sesión, se conserva la
+  local para no perder ventas.
+- `abrir()`: online usa el POST y cachea; sin red o error de red abre local y encola.
+- `cerrarCaja()`: online vacía la cola, verifica que la sesión activa del backend sea la
+  misma y hace `POST /corte`; sin red o error de red cierra local y encola. Si el backend
+  no encuentra el turno local, encola el cierre para que se procese después del `ABRIR`.
+
+#### UI
+
+- `ModalCorteCaja` usa la sesión del contexto (local o remota), avisa si es offline y llama
+  a `cerrarCaja()`. Ya no consulta `getSesionActiva()` por su cuenta.
+- `ModalAbrirCaja` y `ConfiguracionPage` avisan cuando la apertura será local.
+- `ConfiguracionPage` dejó de limpiar la sesión por su cuenta: el contexto ya la cierra.
+- `ModalEntrada` / `ModalSalidas`: sin conexión muestran un aviso y deshabilitan el alta.
+  **No se simulan movimientos manuales offline**: requieren extender el sync del backend.
+
+#### Verificación
+
+- `npm run build` (`tsc` + Vite) sin errores.
+
+#### Pendiente
+
+- **Entradas/Salidas manuales offline**: requieren agregar tipos de evento al backend
+  (`ENTRADA_CAJA` / `SALIDA_CAJA`), payload con monto/motivo e idempotencia. Fuera de este
+  cambio; los modales quedan bloqueados sin conexión para no descuadrar el arqueo.
+
+---
+
 ### Venta — Buscador de productos con fallback a la nube
 
 **Resumen**: `ModalBuscarProducto` leía solo SQLite (Tauri). Fuera de Tauri la búsqueda
@@ -86,11 +148,10 @@ El sync del backend es idempotente por `tipo + uuid`, así que reintentar es seg
 
 - `npm run build` (`tsc` + Vite) sin errores.
 
-#### Pendiente
+#### Nota
 
-- **Sesión de caja offline**: `SesionContext` sigue leyendo
-  `GET /api/caja/v1/sesion-activa` del backend. Tras reiniciar la app sin internet no se
-  puede reabrir caja, aunque la cola de ventas quede intacta. Fuera de este cambio.
+- La **sesión de caja offline** quedó resuelta en la sección “Caja — Apertura y cierre
+  offline” de este mismo día.
 
 ---
 

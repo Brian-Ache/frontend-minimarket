@@ -16,6 +16,7 @@ import {
 } from "./sqliteService";
 
 import { uuidV7 } from "@/lib/uuidv7";
+import { nextSecuencia } from "@/lib/sequence";
 
 export interface ProductoVenta {
   id: number | string;
@@ -46,6 +47,7 @@ export async function cobrarTicket(
   }
 
   const ticketId = uuidV7();
+  const secuencia = nextSecuencia();
   const total = productos.reduce((acc, p) => acc + p.precio * p.cantidad, 0);
   const ahora = new Date().toISOString();
 
@@ -70,7 +72,7 @@ export async function cobrarTicket(
   const payload = JSON.stringify({
     uuid: ticketId,
     tipo: "CREAR",
-    secuencia: Date.now(),
+    secuencia,
     ocurridoEn: ahoraLocal,
     idVendedor: idUsuario,
     idSesion: idSesion || null,
@@ -91,7 +93,7 @@ export async function cobrarTicket(
     id: ticketId,
     tipo: "CREAR",
     uuid_entidad: ticketId,
-    secuencia: Date.now(),
+    secuencia,
     ocurrido_en: ahora,
     payload,
     estado: "PENDIENTE",

@@ -46,6 +46,19 @@ export default function ModalSalida({
     const [cargando, setCargando] = useState(false);
     const [guardando, setGuardando] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [offline, setOffline] = useState<boolean>(
+        () => typeof navigator !== "undefined" && !navigator.onLine
+    );
+
+    useEffect(() => {
+        const actualizar = () => setOffline(!navigator.onLine);
+        window.addEventListener("online", actualizar);
+        window.addEventListener("offline", actualizar);
+        return () => {
+            window.removeEventListener("online", actualizar);
+            window.removeEventListener("offline", actualizar);
+        };
+    }, []);
 
     // Centralizamos el cierre del modal aquí
   const handleOpenChange = (isOpen: boolean) => {
@@ -63,17 +76,28 @@ export default function ModalSalida({
     useEffect(() => {
         if (!open) return;
 
+        if (offline) {
+            setCargando(false);
+            setError(null);
+            setMovimientos([]);
+            return;
+        }
+
         setCargando(true);
         setError(null);
         getMovimientos()
             .then((movs) => setMovimientos(movs.filter((m) => m.tipo === "SALIDA")))
             .catch((err) => setError(mensajeDeError(err)))
             .finally(() => setCargando(false));
-    }, [open]);
+    }, [open, offline]);
 
     // POST /api/caja/v1/salidas — el backend responde con el movimiento ya guardado
     const enviarSalida = async (valor: number, motivo: string) => {
         if (guardando) return;
+        if (offline) {
+            setError("Las salidas manuales requieren conexión. Se habilitan al reconectar.");
+            return;
+        }
         if (!Number.isFinite(valor) || valor <= 0) {
             setError("El monto debe ser mayor a 0");
             return;
@@ -108,7 +132,7 @@ export default function ModalSalida({
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [open, valorSalida, mensaje, guardando]);
+    }, [open, valorSalida, mensaje, guardando, offline]);
 
 
     return(
@@ -118,6 +142,12 @@ export default function ModalSalida({
                     <DialogTitle>Salida de Dinero</DialogTitle>
                     <DialogDescription>Completa los campos para registrar un nuevo movimiento.</DialogDescription>
                 </DialogHeader>
+
+                {offline && (
+                    <p className="text-sm text-amber-600">
+                        Las salidas manuales requieren conexión. Se habilitan al reconectar.
+                    </p>
+                )}
 
                 <div className="space-y-3">
                     <Input
@@ -184,7 +214,7 @@ export default function ModalSalida({
 
                 <DialogFooter className="mt-4">
                     <Button
-                        disabled={guardando}
+                        disabled={guardando || offline}
                         onClick={() => enviarSalida(valorSalida, mensaje)}
                     >
                         {guardando ? "Guardando..." : "Aceptar"}

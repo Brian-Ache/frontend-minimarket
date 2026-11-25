@@ -17,7 +17,7 @@ import AppRouter from "./routes/AppRouter";
 import { AuthProvider } from "./context/AuthContext";
 // [SQLite] Imports para sincronización de SQLite al iniciar
 import { useEffect } from "react";
-import { initDatabase } from "./services/venta/sqliteService";
+import { initDatabase, SQLITE_READY_EVENT } from "./services/venta/sqliteService";
 import {
   syncProductos,
   startRetryLoop,
@@ -64,6 +64,7 @@ function App() {
       try {
         await initDatabase();
         console.log("[SQLite] Base de datos inicializada");
+        window.dispatchEvent(new Event(SQLITE_READY_EVENT));
       } catch (error) {
         console.error("[SQLite] Error al inicializar:", error);
       }

@@ -6,6 +6,7 @@
  * - Eventos de la cola (eventos offline pendientes de sync: CREAR, ANULAR, ABRIR_SESION, CERRAR_SESION)
  * - Detalle de eventos CREAR (items de cada venta)
  * - Tickets locales (historial de ventas del día)
+ * - Sesión de caja local (apertura/cierre offline)
  *
  * Usa tauri-plugin-sql con SQLite.
  */
@@ -14,6 +15,11 @@ import Database from "@tauri-apps/plugin-sql";
 
 // [SQLite] Formato correcto: sqlite:nombre.db
 const DB_NAME = "sqlite:minimarket.db";
+
+// [SQLite] La inicialización corre en un efecto de App; los contextos hijos
+// pueden consultar antes de que terminen las tablas. Este evento avisa cuándo
+// están listas para reintentar (por ejemplo, cargar la sesión local).
+export const SQLITE_READY_EVENT = "sqlite:ready";
 
 // [SQLite] Inicializar la base de datos y crear tablas
 export async function initDatabase(): Promise<void> {
@@ -90,6 +96,23 @@ export async function initDatabase(): Promise<void> {
       FOREIGN KEY (id_ticket) REFERENCES tickets_local(id)
     )
   `)
+
+  // [Offline] Turno de caja abierto sin conexión. Una sola fila ABIERTA a la vez:
+  // es el espejo local de la sesión del backend, con el mismo UUID para que
+  // ABRIR_SESION/CERRAR_SESION sean idempotentes al sincronizar.
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS sesion_local (
+      id TEXT PRIMARY KEY,
+      fecha_apertura TEXT NOT NULL,
+      saldo_inicial REAL NOT NULL,
+      estado TEXT NOT NULL DEFAULT 'ABIERTA',
+      id_usuario_apertura TEXT NOT NULL,
+      diferencia_apertura REAL,
+      origen TEXT NOT NULL DEFAULT 'OFFLINE',
+      creado_en TEXT NOT NULL,
+      actualizado_en TEXT NOT NULL
+    )
+  `);
 
   // [SQLite] Retención: el historial de ventas locales vive 7 días.
   // Se limpia al arrancar, antes de que nadie lea la tabla.
@@ -203,6 +226,89 @@ export interface TicketLocal {
   ultimo_error: string | null;
   creado_en: string;
   enviado_en: string | null;
+}
+
+// ============================================================
+// SESIÓN DE CAJA LOCAL (apertura/cierre offline)
+// ============================================================
+export interface SesionLocalRow {
+  id: string;
+  fecha_apertura: string;
+  saldo_inicial: number;
+  estado: string;
+  id_usuario_apertura: string;
+  diferencia_apertura: number | null;
+  origen: string;
+  creado_en: string;
+  actualizado_en: string;
+}
+
+// [SQLite] Guardar la sesión local. Cierra cualquier otra ABIERTA: la caja
+// física es una sola. El UUID se conserva para que el sync sea idempotente.
+export async function guardarSesionLocal(sesion: SesionLocalRow): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    `UPDATE sesion_local
+        SET estado = 'CERRADA', actualizado_en = ?
+      WHERE estado = 'ABIERTA' AND id <> ?`,
+    [sesion.actualizado_en, sesion.id]
+  );
+  await db.execute(
+    `INSERT OR REPLACE INTO sesion_local
+       (id, fecha_apertura, saldo_inicial, estado, id_usuario_apertura,
+        diferencia_apertura, origen, creado_en, actualizado_en)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      sesion.id,
+      sesion.fecha_apertura,
+      sesion.saldo_inicial,
+      sesion.estado,
+      sesion.id_usuario_apertura,
+      sesion.diferencia_apertura,
+      sesion.origen,
+      sesion.creado_en,
+      sesion.actualizado_en,
+    ]
+  );
+  await db.close();
+}
+
+// [SQLite] Turno abierto localmente (si existe)
+export async function getSesionLocalActiva(): Promise<SesionLocalRow | null> {
+  const db = await Database.load(DB_NAME);
+  const rows = await db.select<SesionLocalRow[]>(
+    "SELECT * FROM sesion_local WHERE estado = 'ABIERTA' ORDER BY fecha_apertura DESC LIMIT 1"
+  );
+  await db.close();
+  return rows[0] ?? null;
+}
+
+// [SQLite] Cerrar el turno local (no borra: deja historial y auditoría)
+export async function marcarSesionLocalCerrada(id: string): Promise<void> {
+  const db = await Database.load(DB_NAME);
+  await db.execute(
+    "UPDATE sesion_local SET estado = 'CERRADA', actualizado_en = ? WHERE id = ?",
+    [new Date().toISOString(), id]
+  );
+  await db.close();
+}
+
+// [SQLite] ¿Ese turno tiene algo sin sincronizar? Sirve para decidir si al
+// reconectar conviene conservar la sesión local o adoptar la del backend.
+export async function tieneEventosPendientesDeSesion(idSesion: string): Promise<boolean> {
+  const db = await Database.load(DB_NAME);
+  const rows = await db.select<{ total: number }[]>(
+    `SELECT
+       (SELECT COUNT(*) FROM evento_cola
+         WHERE estado = 'PENDIENTE'
+           AND (uuid_entidad = ? OR payload LIKE ?))
+       +
+       (SELECT COUNT(*) FROM tickets_local
+         WHERE estado = 'PENDIENTE' AND id_sesion = ?) AS total`,
+    [idSesion, `%"idSesion":"${idSesion}"%`, idSesion]
+  );
+  await db.close();
+  return Number(rows[0]?.total ?? 0) > 0;
 }
 
 // ============================================================
