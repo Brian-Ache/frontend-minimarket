@@ -1,5 +1,129 @@
 # Changelog Frontend
 
+## 2026-11-25
+
+---
+
+### Caja — “Cortar Caja” cierra el turno y bloquea el cobro sin sesión
+
+**Resumen**: “Cortar Caja” solo abre el modal; el cierre real ocurre al confirmar y ejecuta
+`cerrarCaja()` → `POST /api/caja/v1/corte`, que cierra la sesión activa y deja
+`sesion = null`. Se endureció el front para que “Cobrar” no quede habilitado con una sesión
+vieja.
+
+#### `src/context/SesionContext.tsx`
+
+- Revalida la sesión al recuperar foco/visibilidad (`focus` + `visibilitychange`), con debounce
+  de 1 s, para detectar cierres desde otra pestaña/terminal.
+- `cargar()` sigue conservando la sesión local si tiene eventos pendientes, para no perder
+  ventas offline.
+
+#### `src/components/venta/VentaPage.tsx`
+
+- Revalida la caja al entrar a Ventas.
+- `cobrar()` no hace nada mientras `loading` está activo.
+- Si `cobrarTicket()` falla antes de guardar (por ejemplo, sesión cerrada), ya no vacía el
+  ticket.
+
+#### `src/components/venta/Components/FooterVenta.tsx`
+
+- “Cobrar” queda deshabilitado con `loading || !sesion`.
+- Texto “Verificando caja...” mientras se revalida; “La caja no está abierta para vender” sin
+  sesión.
+
+#### `src/services/venta/ventaLocalService.ts`
+
+- `cobrarTicket()` verifica `getSesionLocalActiva()` y que el `id` coincida con `idSesion`
+  antes de guardar.
+- Si la caja se cerró, devuelve error sin encolar la venta.
+
+#### `src/components/corte/pageCorte.tsx`
+
+- Usa `useSesion()`: “Cortar Caja” solo aparece si hay sesión; sin sesión muestra “Caja
+  cerrada”.
+- Mientras carga, muestra “Verificando caja...”.
+
+#### Verificación
+
+- `npm run build` (`tsc` + Vite) sin errores.
+- Sin cambios de backend.
+
+---
+
+### Ventas — Anulación local resistente al sync
+
+**Resumen**: una venta anulada podía volver a `ENVIADO` cuando llegaba la respuesta del
+`CREAR`, y los eventos `ANULAR` quedaban en la cola porque el front usaba el UUID del ticket
+como si fuera el id del evento.
+
+#### `src/services/venta/sqliteService.ts`
+
+- `marcarTicketLocalSincronizado()` ahora actualiza solo si `estado <> 'ANULADO'`.
+- +`marcarEventoEnviadoPorEntidad()`, `marcarEventoErrorPorEntidad()` y
+  `marcarEventoFalloDefinitivoPorEntidad()`: actualizan `evento_cola` por
+  `uuid_entidad + tipo`, no por `id`.
+- Error definitivo de `ANULAR` deja el ticket en `ERROR`; error definitivo de `CREAR` no pisa
+  un ticket `ANULADO`.
+
+#### `src/services/venta/syncService.ts`
+
+- Los resultados `OK`, reintentables y definitivos usan las funciones por entidad/tipo.
+- `CREAR` OK → `marcarTicketLocalSincronizado()`.
+- `ANULAR` OK → `marcarTicketLocalAnulado()`.
+- El evento `ANULAR` deja de quedar `PENDIENTE` y de reintentarse cada 15 s.
+
+#### Verificación
+
+- `npm run build` sin errores.
+
+---
+
+### Corte — Salidas por reversa y modal de ventas del día
+
+**Resumen**: las anulaciones de venta generan movimientos `SALIDA` con origen `REVERSA`; el
+balance no las sumaba y el modal de ventas del corte no permitía anular ni navegar.
+
+#### `src/components/corte/Salidas.tsx`
+
+- Las salidas con `origen === "REVERSA"` se muestran como “Anulación de venta”.
+
+#### `src/components/corte/infoBalance.tsx`
+
+- “Total Salidas” = `totalSalidasManuales` + suma de movimientos `SALIDA`/`REVERSA`.
+- Usa `getMovimientosPorRangoCompleto()` + `Promise.allSettled`; si falla la carga de
+  movimientos, cae a solo manuales.
+- Cálculo solo en frontend; `CajaService` no se modificó.
+
+#### `src/components/corte/ModalVentasDelDia.tsx`
+
+- Paridad visual con el modal de ventas del día.
+- Navegación con `↑`/`↓` y scroll al ticket seleccionado.
+- Anulación remota con `DELETE /api/ventas/v1/{id}` y estado “Anulada”.
+- Callback `onVentaAnulada` para refrescar balance/listas.
+
+#### `src/services/ventaService.ts`
+
+- +`anularVenta(id)`.
+
+#### `src/components/corte/pageCorte.tsx`
+
+- Pasa `onVentaAnulada` a `InfoBalance` para incrementar `refresco`.
+
+#### Pendiente / limitación
+
+- `CorteResponse` y `SesionCaja.totalSalidasManuales` siguen guardando solo salidas manuales;
+  el desglose visual del front suma reversas, pero un corte histórico persistido mantiene el
+  criterio anterior.
+- “Total Entradas” sigue mostrando solo manuales; la lista de Entradas incluye `REVERSA`.
+- La anulación remota desde Corte no actualiza `tickets_local`; el modal local de ventas puede
+  seguir mostrando el ticket hasta sincronizar/recargar.
+
+#### Verificación
+
+- `npm run build` sin errores.
+
+---
+
 ## 2026-11-23
 
 ---
