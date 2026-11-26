@@ -5,13 +5,13 @@ import RegistrarUsModal from "./modals/registrarUsModal";
 import { syncProductos } from "@/services/venta/syncService";
 import { useSesion } from "@/context/SesionContext";
 import { useAuth } from "@/context/AuthContext";
-import { Input } from "@/components/ui/input";
 import ModalCorteCaja from "@/components/corte/ModalCorteCaja";
+import ModalAbrirCajaForm from "@/components/caja/ModalAbrirCajaForm";
 import ModalEventosCola from "./modals/ModalEventosCola";
 
 
 export default function ConfiguracionPage() {
-  const { abrir } = useSesion();
+  const { sesion, loading } = useSesion();
   const { clearJustLoggedIn } = useAuth();
   const [cargando, setCargando] = useState(false);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -22,33 +22,8 @@ export default function ConfiguracionPage() {
   const [modalCorteAbierto, setModalCorteAbierto] = useState(false);
   // [SQLite] Modal de solo lectura de la cola de eventos
   const [modalEventosAbierto, setModalEventosAbierto] = useState(false);
-
-  // Estado para abrir caja
-  const [saldoInicial, setSaldoInicial] = useState("");
-  const [cargandoApertura, setCargandoApertura] = useState(false);
-  const [errorApertura, setErrorApertura] = useState("");
-
-  const handleAbrir = async () => {
-    const monto = parseFloat(saldoInicial);
-    if (isNaN(monto) || monto < 0) {
-      setErrorApertura("Ingresá un monto válido (0 o más)");
-      return;
-    }
-    setCargandoApertura(true);
-    setErrorApertura("");
-    try {
-      await abrir(monto);
-      console.log("Caja abierta exitosamente");
-      clearJustLoggedIn();
-      setSaldoInicial("");
-    } catch (err: any) {
-      const msg = err.response?.data?.error || err.message || "Error al abrir la caja";
-      console.error("Error al abrir caja:", msg);
-      setErrorApertura(msg);
-    } finally {
-      setCargandoApertura(false);
-    }
-  };
+  // Modal para abrir la caja con el monto inicial
+  const [modalAperturaAbierto, setModalAperturaAbierto] = useState(false);
 
   // [SQLite] Sincronizar productos desde el backend hacia SQLite
   const sincronizarCatalogo = async () => {
@@ -103,29 +78,12 @@ export default function ConfiguracionPage() {
         <Button
           variant="default"
           className="bg-green-600 hover:bg-green-700"
-          onClick={handleAbrir}
-          disabled={cargandoApertura}
+          onClick={() => setModalAperturaAbierto(true)}
+          disabled={loading || !!sesion}
         >
-          {cargandoApertura ? "Abriendo..." : "Abrir Caja"}
+          {loading ? "Verificando..." : sesion ? "Caja abierta" : "Abrir Caja"}
         </Button>
-        <Input
-          type="number"
-          min="0"
-          step="any"
-          placeholder="Saldo inicial $"
-          value={saldoInicial}
-          onChange={(e) => { setSaldoInicial(e.target.value); setErrorApertura(""); }}
-          className="w-32"
-        />
-        {errorApertura && (
-          <span className="text-sm text-red-500">{errorApertura}</span>
-        )}
       </div>
-      {typeof navigator !== "undefined" && !navigator.onLine && (
-        <p className="mx-2 text-sm text-amber-600">
-          Sin conexión: la caja se abrirá localmente y se sincronizará al reconectar.
-        </p>
-      )}
       <Button
         className="m-2"
         variant="destructive"
@@ -135,6 +93,15 @@ export default function ConfiguracionPage() {
       </Button>
 
       <RegistrarUsModal open={modalAbierto} onOpenChange={setModalAbierto} />
+
+      <ModalAbrirCajaForm
+        open={modalAperturaAbierto}
+        onOpenChange={setModalAperturaAbierto}
+        onAbierto={() => {
+          clearJustLoggedIn();
+          setMensajeSync("Caja abierta exitosamente");
+        }}
+      />
 
       <ModalEventosCola
         open={modalEventosAbierto}

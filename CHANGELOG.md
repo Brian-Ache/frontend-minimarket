@@ -50,6 +50,34 @@ vieja.
 
 ---
 
+### Configuración — Apertura de caja desde modal
+
+**Resumen**: en Configuración el monto inicial se ingresaba inline, al lado del botón. Ahora
+“Abrir Caja” abre un modal con el input del saldo inicial.
+
+#### `src/components/caja/ModalAbrirCajaForm.tsx` (NUEVO)
+
+- Modal controlado con `open` / `onOpenChange` y callback `onAbierto`.
+- Input de saldo inicial con validación de monto finito `>= 0`, `autoFocus` y Enter para
+  confirmar.
+- Aviso de apertura offline dentro del modal.
+- Manejo de `409` (“Ya hay una caja abierta”), `404` y error genérico.
+- No toca el `ModalAbrirCaja` automático del login.
+
+#### `src/components/configuracion/ConfiguracionPage.tsx`
+
+- Elimina el input inline, `handleAbrir` y los estados de apertura.
+- El botón “Abrir Caja” abre el modal.
+- Se deshabilita mientras `loading` o si ya hay una sesión abierta; en ese caso muestra
+  “Caja abierta”.
+- Al abrir correctamente, cierra el modal y muestra “Caja abierta exitosamente”.
+
+#### Verificación
+
+- `npm run build` sin errores.
+
+---
+
 ### Ventas — Anulación local resistente al sync
 
 **Resumen**: una venta anulada podía volver a `ENVIADO` cuando llegaba la respuesta del
