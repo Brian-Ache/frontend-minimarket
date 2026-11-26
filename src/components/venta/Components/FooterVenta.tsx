@@ -44,6 +44,7 @@ type Props = {
   setOpenModalVentasDia: (isopen:boolean) => void;
 
   sesion: SesionActiva | null;
+  loading: boolean;
 };
 
 export default function FooterVenta({ 
@@ -64,6 +65,7 @@ export default function FooterVenta({
   openModalVentasDia,
   setOpenModalVentasDia,
   sesion,
+  loading,
 }: Props) {
 
   return (
@@ -108,14 +110,20 @@ export default function FooterVenta({
               <span className="hidden sm:inline">Eliminar ticket</span>
             </Button>
             {/* [SQLite] Botón Cobrar conectado a la cola de tickets */}
-            <Button className="col-span-2 bg-emerald-600 text-white hover:bg-emerald-700 sm:col-span-1" onClick={onCobrar} disabled={!sesion}>
-              {!sesion && (
+            <Button className="col-span-2 bg-emerald-600 text-white hover:bg-emerald-700 sm:col-span-1" onClick={onCobrar} disabled={loading || !sesion}>
+              {loading && (
                 <>
-                  <span className="sm:hidden">Caja cerrada</span>
-                  <span className="hidden sm:inline">La caja no esta abierta para vender</span>
+                  <span className="sm:hidden">Verificando...</span>
+                  <span className="hidden sm:inline">Verificando caja...</span>
                 </>
               )}
-              {sesion && (
+              {!loading && !sesion && (
+                <>
+                  <span className="sm:hidden">Caja cerrada</span>
+                  <span className="hidden sm:inline">La caja no está abierta para vender</span>
+                </>
+              )}
+              {!loading && sesion && (
                 <>
                   <span className="sm:hidden">Cobrar</span>
                   <span className="hidden sm:inline">F12 - Cobrar</span>

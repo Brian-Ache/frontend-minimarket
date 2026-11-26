@@ -11,8 +11,10 @@ import Salidas from "./Salidas";
 import Entradas from "./Entradas";
 import ModalCorteCaja from "./ModalCorteCaja";
 import { esHoy } from "./fechas";
+import { useSesion } from "@/context/SesionContext";
 
 export default function PageCorte() {
+  const { sesion, loading: cargandoSesion } = useSesion();
   // Estado local para la fecha seleccionada (por defecto hoy)
   const [selectedDate, setSelectedDate] = useState(new Date());
   // Contador para recargar los datos de los hijos tras cerrar la caja
@@ -72,14 +74,21 @@ export default function PageCorte() {
             </PopoverContent>
           </Popover>
 
-          {/* BOTÓN CORTAR CAJA (Solo visible o activo si es HOY) */}
+          {/* BOTÓN CORTAR CAJA (Solo visible o activo si es HOY y hay caja abierta) */}
           {esHoy(selectedDate) ? (
-            <Button
-              onClick={() => setModalCorteAbierto(true)}
-              className="h-8 px-3 text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm transition-colors rounded-lg"
-            >
-              Cortar Caja
-            </Button>
+            sesion ? (
+              <Button
+                onClick={() => setModalCorteAbierto(true)}
+                disabled={cargandoSesion}
+                className="h-8 px-3 text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm transition-colors rounded-lg"
+              >
+                {cargandoSesion ? "Verificando..." : "Cortar Caja"}
+              </Button>
+            ) : (
+              <Badge variant="outline" className="h-8 px-3 text-xs font-medium text-slate-500 border-slate-200 bg-slate-50">
+                {cargandoSesion ? "Verificando caja..." : "Caja cerrada"}
+              </Badge>
+            )
           ) : (
             <Badge variant="outline" className="h-8 px-3 text-xs font-medium text-slate-500 border-slate-200 bg-slate-50">
               Caja Cerrada

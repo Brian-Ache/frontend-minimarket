@@ -11,6 +11,7 @@
 import {
   crearEventoCola,
   crearTicketLocal,
+  getSesionLocalActiva,
   marcarTicketLocalAnulado,
   type EventoCola,
   type DetalleTicketCola,
@@ -45,6 +46,24 @@ export async function cobrarTicket(
       exito: false,
       ticketId: "",
       mensaje: "No hay una sesión de caja abierta. Debés abrir la caja antes de vender."
+    };
+  }
+
+  try {
+    const sesionLocal = await getSesionLocalActiva();
+    if (!sesionLocal || sesionLocal.id !== idSesion) {
+      return {
+        exito: false,
+        ticketId: "",
+        mensaje: "La caja se cerró. Abrí la caja nuevamente antes de vender."
+      };
+    }
+  } catch (error) {
+    console.error("[SQLite] No se pudo verificar la sesión local:", error);
+    return {
+      exito: false,
+      ticketId: "",
+      mensaje: "No se pudo verificar la caja local. Intentá nuevamente."
     };
   }
 
